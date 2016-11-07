@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using AramBuddy.MainCore.Utility;
 using AramBuddy.MainCore.Utility.MiscUtil;
 using EloBuddy;
 using EloBuddy.SDK;
 using EloBuddy.SDK.Enumerations;
-using EloBuddy.SDK.Events;
 using EloBuddy.SDK.Menu;
-using EloBuddy.SDK.Menu.Values;
-using SharpDX;
 
 namespace AramBuddy.Plugins.Champions.Rumble
 {
@@ -34,28 +29,27 @@ namespace AramBuddy.Plugins.Champions.Rumble
                     KillStealMenu.CreateCheckBox(spell.Slot, "Use " + spell.Slot);
                 }
             }
-
         }
-
-
 
         public override void Active()
         {
-            
         }
 
         public override void Combo()
         {
             var etarget = TargetSelector.GetTarget(E.Range, DamageType.Magical);
-            if (etarget == null || !etarget.IsKillable(E.Range)) return;
+            if (etarget == null || !etarget.IsKillable(E.Range))
+                return;
             if (ComboMenu.CheckBoxValue(SpellSlot.E) && E.IsReady())
                 E.Cast(etarget);
             var rtarget = TargetSelector.GetTarget(R.Range, DamageType.Magical);
-            if (rtarget == null || !rtarget.IsKillable(R.Range)) return;
+            if (rtarget == null || !rtarget.IsKillable(R.Range))
+                return;
             if (ComboMenu.CheckBoxValue(SpellSlot.R) && R.IsReady())
-                rtarget.RCast();
+                RCast(rtarget);
             var qtarget = TargetSelector.GetTarget(Q.Range, DamageType.Magical);
-            if (qtarget == null || !qtarget.IsKillable(Q.Range)) return;
+            if (qtarget == null || !qtarget.IsKillable(Q.Range))
+                return;
             if (ComboMenu.CheckBoxValue(Q.Slot) && Q.IsReady())
                 Q.Cast();
             if (ComboMenu.CheckBoxValue(W.Slot) && W.IsReady())
@@ -71,27 +65,34 @@ namespace AramBuddy.Plugins.Champions.Rumble
         public override void Harass()
         {
             var etarget = TargetSelector.GetTarget(E.Range, DamageType.Magical);
-            if (etarget == null || !etarget.IsKillable(E.Range)) return;
+            if (etarget == null || !etarget.IsKillable(E.Range))
+                return;
             if (HarassMenu.CheckBoxValue(SpellSlot.E) && E.IsReady())
                 E.Cast(etarget);
             var qtarget = TargetSelector.GetTarget(Q.Range, DamageType.Magical);
-            if (qtarget == null || !qtarget.IsKillable(Q.Range)) return;
+            if (qtarget == null || !qtarget.IsKillable(Q.Range))
+                return;
             if (HarassMenu.CheckBoxValue(Q.Slot) && Q.IsReady())
                 Q.Cast();
-
         }
 
         public override void KillSteal()
         {
-            foreach (var target in EntityManager.Heroes.Enemies.Where(e => e.IsValidTarget(Q.Range) && Q.WillKill(e)))
+            foreach (var target in EntityManager.Heroes.Enemies.Where(e => e.IsKillable(Q.Range)))
             {
-                if (KillStealMenu.CheckBoxValue(Q.Slot) && Q.IsReady())
+                if (KillStealMenu.CheckBoxValue(Q.Slot) && Q.IsReady() && Q.WillKill(target))
+                {
                     Q.Cast();
+                    break;
+                }
             }
-            foreach (var target in EntityManager.Heroes.Enemies.Where(e => e.IsValidTarget(E.Range) && E.WillKill(e)))
+            foreach (var target in EntityManager.Heroes.Enemies.Where(e => e.IsKillable(E.Range)))
             {
-                if (KillStealMenu.CheckBoxValue(E.Slot) && E.IsReady())
-                    E.Cast();
+                if (KillStealMenu.CheckBoxValue(E.Slot) && E.IsReady() && E.WillKill(target))
+                {
+                    E.Cast(target);
+                    break;
+                }
             }
         }
 
@@ -105,30 +106,30 @@ namespace AramBuddy.Plugins.Champions.Rumble
                     E.Cast(target);
             }
         }
-    }
-    internal static class Vectors
-    {
-        public static void RCast(this AIHeroClient target, int HitCount = 1)
+
+        public static void RCast(AIHeroClient target, int HitCount = 1)
         {
-            if (!Base.R.IsReady()) return;
+            if (!R.IsReady())
+                return;
 
             var rectlist = new List<Geometry.Polygon.Rectangle>();
             rectlist.Clear();
-            var pred = Base.R.GetPrediction(target);
+            var pred = R.GetPrediction(target);
 
-            if (pred.HitChance < HitChance.Low) return;
+            if (pred.HitChance <= HitChance.Low)
+                return;
 
-            Vector3 Start = pred.CastPosition.Distance(Player.Instance) > 1625 ? Player.Instance.ServerPosition.Extend(pred.CastPosition, 1625).To3D() : target.ServerPosition;
-            Vector3 End = pred.CastPosition;
+            var Start = pred.CastPosition.Distance(Player.Instance) > 1625 ? Player.Instance.ServerPosition.Extend(pred.CastPosition, 1625).To3D() : target.ServerPosition;
+            var End = pred.CastPosition;
 
-            foreach (var A in EntityManager.Heroes.Enemies.OrderBy(o => o.PredictHealth()).Where(e => e.IsKillable(Base.R.Range) && e.NetworkId != target.NetworkId))
+            foreach (var A in EntityManager.Heroes.Enemies.OrderBy(o => o.PredictHealth()).Where(e => e.IsKillable(R.Range) && e.NetworkId != target.NetworkId))
             {
-                var predmobB = Base.R.GetPrediction(A);
+                var predmobB = R.GetPrediction(A);
                 End = Start.Extend(predmobB.CastPosition, 1700).To3D();
-                rectlist.Add(new Geometry.Polygon.Rectangle(Start, End, Base.R.SetSkillshot().Width));
+                rectlist.Add(new Geometry.Polygon.Rectangle(Start, End, R.SetSkillshot().Width));
             }
 
-            var bestpos = rectlist.OrderByDescending(r => EntityManager.Heroes.Enemies.OrderBy(o => o.PredictHealth()).Count(m => r.IsInside(m) && m.IsKillable(Base.R.Range))).FirstOrDefault();
+            var bestpos = rectlist.OrderByDescending(r => EntityManager.Heroes.Enemies.OrderBy(o => o.PredictHealth()).Count(m => r.IsInside(m) && m.IsKillable(R.Range))).FirstOrDefault();
 
             if (bestpos != null)
             {
@@ -137,57 +138,19 @@ namespace AramBuddy.Plugins.Champions.Rumble
 
                 if (HitCount > 1)
                 {
-                    if (EntityManager.Heroes.Enemies.OrderBy(o => o.PredictHealth()).Count(m => bestpos.IsInside(m) && m.IsKillable(Base.R.Range)) >= HitCount)
+                    if (EntityManager.Heroes.Enemies.OrderBy(o => o.PredictHealth()).Count(m => bestpos.IsInside(m) && m.IsKillable(R.Range)) >= HitCount)
                     {
-                        Base.R.CastStartToEnd(End, Start);
+                        R.CastStartToEnd(End, Start);
                     }
                 }
                 else
                 {
-                    Base.R.CastStartToEnd(End, Start);
+                    R.CastStartToEnd(End, Start);
                 }
             }
             else
             {
-                Base.R.CastStartToEnd(End, Start);
-            }
-        }
-
-
-        public static void RCast(int HitCount = 1)
-        {
-            if (!Base.R.IsReady()) return;
-
-            var rectlist = new List<Geometry.Polygon.Rectangle>();
-            rectlist.Clear();
-            Vector3 Start;
-            Vector3 End;
-            var mobs = EntityManager.MinionsAndMonsters.EnemyMinions.OrderBy(o => o.PredictHealth()).Where(e => e.IsKillable(Base.R.Range));
-
-            foreach (var A in mobs)
-            {
-                var predmob = Base.R.GetPrediction(A);
-                Start = predmob.CastPosition.Distance(Player.Instance) > 1625 ? Player.Instance.ServerPosition.Extend(predmob.CastPosition, 1625).To3D() : A.ServerPosition;
-                var mobs2 = EntityManager.MinionsAndMonsters.EnemyMinions.OrderBy(o => o.PredictHealth()).Where(e => e.IsKillable(Base.R.Range) && e.NetworkId != A.NetworkId && e.IsInRange(A, 600));
-                foreach (var B in mobs2)
-                {
-                    var predmobB = Base.R.GetPrediction(B);
-                    End = Start.Extend(predmobB.CastPosition, 1700).To3D();
-                    rectlist.Add(new Geometry.Polygon.Rectangle(Start, End, Base.R.SetSkillshot().Width));
-                }
-            }
-
-            var bestpos = rectlist.OrderByDescending(r => EntityManager.MinionsAndMonsters.EnemyMinions.OrderBy(o => o.PredictHealth()).Count(m => r.IsInside(m) && m.IsKillable(Base.R.Range))).FirstOrDefault();
-
-            if (bestpos != null)
-            {
-                var mobs3 = EntityManager.MinionsAndMonsters.EnemyMinions.OrderBy(o => o.PredictHealth()).Count(m => bestpos.IsInside(m) && m.IsKillable(Base.R.Range));
-                if (mobs3 >= HitCount)
-                {
-                    Start = bestpos.Start.To3D();
-                    End = bestpos.End.To3D();
-                    Base.R.CastStartToEnd(End, Start);
-                }
+                R.CastStartToEnd(End, Start);
             }
         }
     }
