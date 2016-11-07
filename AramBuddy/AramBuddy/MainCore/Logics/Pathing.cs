@@ -147,6 +147,13 @@ namespace AramBuddy.MainCore.Logics
                 return;
             }
 
+            if (PickOlafAxe && ObjectsManager.OlafAxe != null)
+            {
+                Program.Moveto = "OlafAxe";
+                Position = ObjectsManager.OlafAxe.Position;
+                return;
+            }
+
             if (PickZacBlops && ObjectsManager.ZacBlop != null)
             {
                 Program.Moveto = "ZacBlop";

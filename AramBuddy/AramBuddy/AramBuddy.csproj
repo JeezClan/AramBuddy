@@ -43,7 +43,7 @@
     </Reference>
     <Reference Include="EloBuddy.SDK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=6b574a82b1ea937e, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\EloBuddy\System\EloBuddy.SDK.dll</HintPath>
+      <HintPath>..\..\..\..\..\Desktop\New folder\EloBuddy\System\EloBuddy.SDK.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -72,6 +72,7 @@
     <Compile Include="MainCore\Utility\MiscUtil\Caching\Cache.cs" />
     <Compile Include="MainCore\Utility\MiscUtil\Caching\Gapclosers.cs" />
     <Compile Include="MainCore\Utility\MiscUtil\Caching\Interuptables.cs" />
+    <Compile Include="MainCore\Utility\MiscUtil\Objects.cs" />
     <Compile Include="Plugins\Activator\Cleanse\Qss.cs" />
     <Compile Include="Plugins\Activator\Items\Database.cs" />
     <Compile Include="Plugins\Activator\Items\Defence.cs" />

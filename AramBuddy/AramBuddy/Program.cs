@@ -284,6 +284,7 @@ namespace AramBuddy
                 var bardchime = MiscMenu.CreateCheckBox("bardchime", "Pick Bard Chimes");
                 var corkibomb = MiscMenu.CreateCheckBox("corkibomb", "Pick Corki Bomb");
                 var dravenaxe = MiscMenu.CreateCheckBox("dravenaxe", "Pick Draves Axes");
+                var olafaxe = MiscMenu.CreateCheckBox("olafaxe", "Pick Olaf Axe");
                 var zacpassive = MiscMenu.CreateCheckBox("zacpassive", "Pick Zac Blops");
                 var azirtower = MiscMenu.CreateCheckBox("azirtower", "Create Azir Towers");
                 var teleport = MiscMenu.CreateCheckBox("tp", "Enable use of Teleporting Logic");
@@ -321,6 +322,7 @@ namespace AramBuddy
                         bardchime.CurrentValue = true;
                         corkibomb.CurrentValue = true;
                         dravenaxe.CurrentValue = true;
+                        olafaxe.CurrentValue = true;
                         zacpassive.CurrentValue = true;
                         azirtower.CurrentValue = true;
                         teleport.CurrentValue = true;
@@ -443,7 +445,7 @@ namespace AramBuddy
                     }*/
                 }
 
-                if(Player.Instance.Hero == Champion.Zac)
+                if (Player.Instance.Hero == Champion.Zac)
                     ObjectsManager.ZacPassives.ForEach(p => Circle.Draw(Color.AliceBlue, 100, p));
             }
             catch (Exception ex)

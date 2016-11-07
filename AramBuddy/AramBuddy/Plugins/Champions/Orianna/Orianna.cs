@@ -64,7 +64,7 @@ namespace AramBuddy.Plugins.Champions.Orianna
         {
             OriannaBall =
                 ObjectManager.Get<Obj_AI_Base>()
-                    .FirstOrDefault(o => o != null && (o.HasBuff("OrianaGhostSelf") || o.HasBuff("OrianaGhost") && (o.GetBuff("OrianaGhost").Caster.IsMe || o.GetBuff("OrianaGhostSelf").Caster.IsMe)));
+                    .FirstOrDefault(o => o.HasBuff("OrianaGhostSelf") || o.HasBuff("OrianaGhost") && (o.GetBuff("OrianaGhost").Caster.IsMe || o.GetBuff("OrianaGhostSelf").Caster.IsMe));
             if (AutoMenu.CheckBoxValue(R.Slot))
                 RAOE(AutoMenu.SliderValue("RAOE"));
         }

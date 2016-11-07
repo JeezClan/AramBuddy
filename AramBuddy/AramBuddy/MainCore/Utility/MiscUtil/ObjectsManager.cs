@@ -64,6 +64,20 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         /// </summary>
         public static void GameObject_OnCreate(GameObject sender, EventArgs args)
         {
+            var @base = sender as Obj_AI_Base;
+            if (@base != null && @base.BaseSkinName.Equals("OlafAxe") || sender.Name.Contains("Olaf_Base_Q_Axe_Ally"))
+            {
+                OlafAxeObject = new Objects.OlafAxe(sender);
+            }
+
+            if (sender.Name.Contains("Draven_Base_Q_reticle_self"))
+            {
+                if (!DravenAxes.Any(a => a.Axe.IdEquals(sender)))
+                {
+                    DravenAxes.Add(new Objects.DravenAxe(sender));
+                }
+            }
+
             if (sender.GetType() == typeof(Obj_GeneralParticleEmitter))
             {
                 var gameObject = (Obj_GeneralParticleEmitter)sender;
@@ -102,6 +116,20 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         /// </summary>
         public static void GameObject_OnDelete(GameObject sender, EventArgs args)
         {
+            var @base = sender as Obj_AI_Base;
+            if (@base != null && @base.BaseSkinName.Equals("OlafAxe") || sender.Name.Contains("Olaf_Base_Q_Axe_Ally"))
+            {
+                OlafAxeObject = null;
+            }
+
+            if (sender.Name.Contains("Draven_Base_Q_reticle_self"))
+            {
+                if (DravenAxes.Any(a => a.Axe.IdEquals(sender)))
+                {
+                    DravenAxes.RemoveAll(a => a.Axe.IdEquals(sender));
+                }
+            }
+
             if (sender.GetType() == typeof(Obj_GeneralParticleEmitter))
             {
                 var gameObject = (Obj_GeneralParticleEmitter)sender;
@@ -307,11 +335,35 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         {
             get
             {
-                var axe = ObjectManager.Get<GameObject>().Where(a => a != null && !a.IsDead && a.IsValid && 1000 > a.Distance(Player.Instance) / Player.Instance.MoveSpeed * 1000 && a.Name.Contains("Draven_Base_Q_reticle"))
-                    .OrderBy(a => Misc.TeamTotal(a.Position)).FirstOrDefault(a => a.AlliesMoreThanEnemies() && a.Position.IsSafe());
-                return Player.Instance.Hero == Champion.Draven ? axe : null;
+                var axe = DravenAxes.Where(a => !a.Axe.IsDead && a.Axe.IsValid && !a.Finished && a.TicksLeft > a.Axe.Distance(Player.Instance) / Player.Instance.MoveSpeed * 1000)
+                    .OrderBy(a => Misc.TeamTotal(a.Axe.Position)).FirstOrDefault(a => a.Axe.AlliesMoreThanEnemies() && a.Axe.Position.IsSafe());
+                return Player.Instance.Hero == Champion.Draven ? axe?.Axe : null;
             }
         }
+
+        /// <summary>
+        ///     OlafAxeObject.
+        /// </summary>
+        public static Objects.OlafAxe OlafAxeObject { get; set; }
+
+        /// <summary>
+        ///     Returns Olaf Axe.
+        /// </summary>
+        public static GameObject OlafAxe
+        {
+            get
+            {
+                if (OlafAxeObject == null || Player.Instance.Hero != Champion.Olaf)
+                    return null;
+
+                if (!OlafAxeObject.Finished && OlafAxeObject.Axe.AlliesMoreThanEnemies() && OlafAxeObject.Axe.Position.IsSafe())
+                    return OlafAxeObject.Axe;
+
+                    return null;
+            }
+        }
+
+        public static List<Objects.DravenAxe> DravenAxes = new List<Objects.DravenAxe>();
 
         /// <summary>
         ///     Returns Nearest Enemy.

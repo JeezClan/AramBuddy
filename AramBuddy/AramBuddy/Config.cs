@@ -32,6 +32,7 @@ namespace AramBuddy
         public static bool FixedKite => MiscMenu.CheckBoxValue("kite");
         public static bool EnableHighPing => MiscMenu.CheckBoxValue("ping");
         public static bool PickDravenAxe => MiscMenu.CheckBoxValue("dravenaxe");
+        public static bool PickOlafAxe => MiscMenu.CheckBoxValue("olafaxe");
         public static bool PickBardChimes => MiscMenu.CheckBoxValue("bardchime");
         public static bool PickCorkiBomb => MiscMenu.CheckBoxValue("corkibomb");
         public static bool PickZacBlops => MiscMenu.CheckBoxValue("zacpassive");

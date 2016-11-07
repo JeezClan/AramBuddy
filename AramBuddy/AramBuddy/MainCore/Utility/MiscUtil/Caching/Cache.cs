@@ -35,13 +35,21 @@ namespace AramBuddy.MainCore.Utility.MiscUtil.Caching
         private static void Gapcloser_OnGapcloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
         {
             if (sender != null)
-                GapclosersCache.Add(new Gapclosers(sender, e, sender.IsDashing()));
+            {
+                var info = new Gapclosers(sender, e, sender.IsDashing());
+                if(!GapclosersCache.Contains(info))
+                    GapclosersCache.Add(info);
+            }
         }
 
         private static void Interrupter_OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs e)
         {
             if (sender != null)
-                InteruptablesCache.Add(new Interuptables(sender, e));
+            {
+                var info = new Interuptables(sender, e);
+                if (!InteruptablesCache.Contains(info))
+                    InteruptablesCache.Add(info);
+            }
         }
     }
 }
