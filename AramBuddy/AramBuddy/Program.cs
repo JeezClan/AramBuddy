@@ -75,7 +75,7 @@ namespace AramBuddy
                     return;
                 }
 
-                textsize = Drawing.Width <= 400 || Drawing.Height <= 400 ? 10F : 40F;
+                textsize = Drawing.Width <= 1280 || Drawing.Height <= 720 ? 10F : 40F;
                 text = new Text("YOUR ORBWALKER IS DISABLED", new Font("Euphemia", textsize, FontStyle.Bold)) { Color = System.Drawing.Color.White, Position = new Vector2(Drawing.Width * 0.3f, Drawing.Height * 0.2f) };
 
                 Chat.OnClientSideMessage += delegate (ChatClientSideMessageEventArgs eventArgs)
@@ -113,7 +113,8 @@ namespace AramBuddy
                 Game.OnTick += Game_OnTick;
                 Events.OnGameEnd += Events_OnGameEnd;
                 Player.OnPostIssueOrder += Player_OnPostIssueOrder;
-                
+                Drawing.OnEndScene += Drawing_OnEndScene;
+
                 Logger.Send("Starting After: " + (TimeToStart / 1000).ToString("F1") + " Second/s", Logger.LogLevel.Event);
             }
             catch (Exception ex)
@@ -208,7 +209,6 @@ namespace AramBuddy
                     File.Delete(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\EloBuddy\\AramBuddy\\temp\\DisableTexture.dat");
                 }
 
-                Drawing.OnEndScene += Drawing_OnEndScene;
                 Chat.Print("AramBuddy Loaded !");
                 Chat.Print("AramBuddy Version: " + version);
             }
@@ -349,6 +349,8 @@ namespace AramBuddy
                 SpellsMenu.Add("Ghost", new CheckBox("Use Ghost"));
                 SpellsMenu.Add("Flash", new CheckBox("Use Flash"));
                 SpellsMenu.Add("Cleanse", new CheckBox("Use Cleanse"));
+
+                Console.Title = $"{Drawing.Width}x{Drawing.Height}";
             }
             catch (Exception ex)
             {
@@ -361,6 +363,14 @@ namespace AramBuddy
             try
             {
                 if(CrashAIODetected) return;
+
+                if (!Loaded)
+                {
+                    text.TextValue = $"AramBuddy Starting in: {(int)((Timer*1000 + TimeToStart - Game.Time*1000)/1000) + 1}";
+                    text.Position = new Vector2(Drawing.Width * 0.3f, Drawing.Height * 0.2f);
+                    text.Draw();
+                    return;
+                }
 
                 if (Orbwalker.DisableMovement && !MainCore.Logics.Casting.SpecialChamps.IsCastingImportantSpell)
                 {
