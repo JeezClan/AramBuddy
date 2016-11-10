@@ -1,1 +1,1 @@
-Fix Freezing on game start
+Fix for bugsplats
