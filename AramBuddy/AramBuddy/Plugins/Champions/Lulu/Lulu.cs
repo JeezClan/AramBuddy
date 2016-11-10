@@ -81,66 +81,6 @@ namespace AramBuddy.Plugins.Champions.Lulu
             }
         }
 
-        private static void Lulu_SkillshotDetector(EventArgs args)
-        {
-            if (AutoMenu.CheckBoxValue("Rsave") && R.IsReady())
-
-                foreach (
-                    var ally in
-                        from ally in
-                            EntityManager.Heroes.Allies.Where(a => a.IsKillable(R.Range) && a.PredictHealthPercent() < 10)
-                        from spell in Collision.NewSpells.Where(ally.IsInDanger)
-                        select ally)
-                {
-                    R.Cast(ally);
-                }
-
-            if (AutoMenu.CheckBoxValue("Wself") && W.IsReady())
-            {
-                // ReSharper disable once UnusedVariable
-                foreach (var spell in Collision.NewSpells.Where(spell => user.IsInDanger(spell)))
-                {
-                    W.Cast(user);
-                }
-            }
-
-            if (!AutoMenu.CheckBoxValue("Wally") || !W.IsReady() || user.ManaPercent < 60) return;
-
-            foreach (
-                var ally in
-                    from ally in EntityManager.Heroes.Allies.Where(a => a.IsKillable(W.Range) && a != user)
-                    from spell in Collision.NewSpells.Where(ally.IsInDanger)
-                    select ally)
-            {
-                W.Cast(ally);
-            }
-        }
-
-        private static void SpellsDetector_OnTargetedSpellDetected(Obj_AI_Base sender, Obj_AI_Base target,
-            GameObjectProcessSpellCastEventArgs args, Database.TargetedSpells.TSpell spells)
-        {
-            if (target.IsMe && spells.DangerLevel >= 3 && AutoMenu.CheckBoxValue("Wself") && W.IsReady())
-            {
-                W.Cast(user);
-            }
-
-            if (!AutoMenu.CheckBoxValue("Wally") || !W.IsReady() || spells.DangerLevel <= 2 ||
-                user.ManaPercent < 60) return;
-
-            foreach (
-                var ally in
-                    EntityManager.Heroes.Allies.Where(a => a.IsKillable(W.Range) && target.NetworkId == a.NetworkId))
-            {
-                W.Cast(ally);
-            }
-
-            if (!AutoMenu.CheckBoxValue("Rsave") || !R.IsReady() || spells.DangerLevel <= 2) return;
-            foreach (var ally in EntityManager.Heroes.Allies.Where(a => a.IsKillable(R.Range) && a.PredictHealthPercent() < 10))
-            {
-                R.Cast(ally);
-            }
-        }
-
         private static void Dash_OnDash(Obj_AI_Base sender, Dash.DashEventArgs e)
         {
             if (sender == null || !sender.IsEnemy || !sender.IsKillable(Q1.Range)) return;
@@ -283,8 +223,7 @@ namespace AramBuddy.Plugins.Champions.Lulu
 
         public override void Harass()
         {
-            foreach (var spell in SpellList.Where(s => s.IsReady() && HarassMenu.CheckBoxValue(s.Slot)
-                                                       && s != R))
+            foreach (var spell in SpellList.Where(s => s.IsReady() && s != R && HarassMenu.CheckBoxValue(s.Slot)))
             {
                 var target = Pix != null
                     ? TargetSelector.GetTarget(E.Range + Q.Range, DamageType.Magical)

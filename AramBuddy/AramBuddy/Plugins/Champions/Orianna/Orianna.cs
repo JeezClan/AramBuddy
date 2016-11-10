@@ -1,167 +1,548 @@
 ﻿using System.Linq;
+using AramBuddy.MainCore.Utility.MiscUtil.Caching;
 using AramBuddy.Plugins.KappaEvade;
 using EloBuddy;
 using EloBuddy.SDK;
 using EloBuddy.SDK.Enumerations;
 using EloBuddy.SDK.Events;
 using EloBuddy.SDK.Menu;
+using EloBuddy.SDK.Menu.Values;
+using SharpDX;
 using static AramBuddy.MainCore.Utility.MiscUtil.Misc;
 
 namespace AramBuddy.Plugins.Champions.Orianna
 {
     internal class Orianna : Base
     {
-        private static Obj_AI_Base OriannaBall;
-        
+        private static Obj_AI_Base MyBall;
+
+        private static float BallRange = 1200;
+        public static Spell.Skillshot QR { get; }
         static Orianna()
         {
+            QR = new Spell.Skillshot(SpellSlot.Q, 820, SkillShotType.Circular, 450, 1400, 350, DamageType.Magical) { AllowedCollisionCount = int.MaxValue };
+
             MenuIni = MainMenu.AddMenu(MenuName, MenuName);
             AutoMenu = MenuIni.AddSubMenu("Auto");
             ComboMenu = MenuIni.AddSubMenu("Combo");
             HarassMenu = MenuIni.AddSubMenu("Harass");
             LaneClearMenu = MenuIni.AddSubMenu("LaneClear");
             KillStealMenu = MenuIni.AddSubMenu("KillSteal");
-            
-            foreach (var spell in SpellList)
-            {
-                ComboMenu.CreateCheckBox(spell.Slot, "Use " + spell.Slot);
-                HarassMenu.CreateCheckBox(spell.Slot, "Use " + spell.Slot);
-                HarassMenu.CreateSlider(spell.Slot + "mana", spell.Slot + " Mana Manager", 60);
-                LaneClearMenu.CreateCheckBox(spell.Slot, "Use " + spell.Slot);
-                LaneClearMenu.CreateSlider(spell.Slot + "mana", spell.Slot + " Mana Manager", 60);
-                KillStealMenu.CreateCheckBox(spell.Slot, "Use " + spell.Slot);
-            }
 
-            AutoMenu.CreateCheckBox("W", "Flee W");
-            AutoMenu.CreateCheckBox("IntR", "Interrupter R");
-            AutoMenu.CreateCheckBox("R", "Use R");
-            AutoMenu.CreateSlider("RAOE", "R AOE HIT {0}", 3, 1, 5);
+            LaneClearMenu.Add("Qfarm", new ComboBox("Q Farm Logic", 0, "Circular Area", "Linear Logic"));
 
-            ComboMenu.CreateCheckBox("R", "Use R");
-            ComboMenu.CreateSlider("RAOE", "R AOE HIT {0}", 2, 1, 5);
+            SpellList.ForEach(
+                i =>
+                {
+                    if (i != R)
+                    {
+                        ComboMenu.CreateCheckBox(i.Slot, "Use " + i.Slot);
+                        HarassMenu.CreateCheckBox(i.Slot, "Use " + i.Slot);
+                        HarassMenu.CreateSlider(i.Slot + "mana", i.Slot + " Mana Manager {0}%", 60);
+                        HarassMenu.AddSeparator(0);
+                        LaneClearMenu.CreateCheckBox(i.Slot, "Use " + i.Slot, i != E);
+                        LaneClearMenu.CreateSlider(i.Slot + "hit", i.Slot + " Hit {0} Minions", 3, 1, 20);
+                        LaneClearMenu.CreateSlider(i.Slot + "mana", i.Slot + " Mana Manager {0}%", 60);
+                        LaneClearMenu.AddSeparator(0);
+                    }
+                    KillStealMenu.CreateCheckBox(i.Slot, i.Slot + " KillSteal");
+                });
 
-            KillStealMenu.CreateCheckBox("R", "Use R");
-            Interrupter.OnInterruptableSpell += Interrupter_OnInterruptableSpell;
-            //SpellsDetector.OnTargetedSpellDetected += SpellsDetector_OnTargetedSpellDetected;
+            AutoMenu.CreateCheckBox("flee", "Enable Smart Flee");
+            AutoMenu.CreateCheckBox("fleeenemy", "Use Flee Only When Enemies Near", false);
+            AutoMenu.CreateCheckBox("blockR", "Block R if no Hits");
+            AutoMenu.CreateCheckBox("Ehelp", "Use E For Anti-Gapcloser & Interrupter");
+            AutoMenu.CreateCheckBox("Rgap", "Auto R Anti-Gapcloser");
+            AutoMenu.CreateCheckBox("Rint", "Auto R Interrupter");
+            AutoMenu.CreateCheckBox("aoeR", "Auto R AOE");
+            AutoMenu.CreateSlider("Raoe", "Auto R AOE Hit {0} Enemies", 3, 1, 6);
+
+            ComboMenu.CreateCheckBox("R", "R Combo Finisher");
+            ComboMenu.CreateCheckBox("aoeR", "R AOE");
+            ComboMenu.CreateCheckBox("QR", "Use Q for Positon R AoE");
+            ComboMenu.CreateSlider("Whit", "W Hit {0} Enemies", 1, 1, 6);
+            ComboMenu.CreateSlider("Raoe", "R AOE Hit {0} Enemies", 2, 1, 6);
+
+            Spellbook.OnCastSpell += Spellbook_OnCastSpell;
         }
 
-        private static void SpellsDetector_OnTargetedSpellDetected(Obj_AI_Base sender, Obj_AI_Base target, GameObjectProcessSpellCastEventArgs args, Database.TargetedSpells.TSpell spell)
+        private static void Spellbook_OnCastSpell(Spellbook sender, SpellbookCastSpellEventArgs args)
         {
-            if (target.IsMe && E.IsReady())
-            {
-                E.Cast(target);
-            }
-        }
-
-        private static void Interrupter_OnInterruptableSpell(Obj_AI_Base sender, Interrupter.InterruptableSpellEventArgs e)
-        {
-            if (sender == null || !sender.IsEnemy || !R.IsReady() || !AutoMenu.CheckBoxValue("IntR") || OriannaBall == null || !sender.PredictPosition().IsInRange(OriannaBall, R.Range))
+            if (!sender.Owner.IsMe)
                 return;
-            R.Cast(sender);
+
+            if (args.Slot == SpellSlot.R)
+            {
+                if (AutoMenu.CheckBoxValue("blockR") && !RWillHit())
+                    args.Process = false;
+            }
         }
 
         public override void Active()
         {
-            OriannaBall =
-                ObjectManager.Get<Obj_AI_Base>()
-                    .FirstOrDefault(o => o.HasBuff("OrianaGhostSelf") || o.HasBuff("OrianaGhost") && (o.GetBuff("OrianaGhost").Caster.IsMe || o.GetBuff("OrianaGhostSelf").Caster.IsMe));
-            if (AutoMenu.CheckBoxValue(R.Slot))
-                RAOE(AutoMenu.SliderValue("RAOE"));
+            if (Q.SetSkillshot().SourcePosition != MyBall?.ServerPosition)
+                Q.SetSkillshot().SourcePosition = MyBall?.ServerPosition;
+            QR.SourcePosition = Q.SetSkillshot().SourcePosition;
+
+            BetaAntiGapCloser();
+            BetInterrupter();
+
+            if (R.IsReady() && AutoMenu.CheckBoxValue("aoeR"))
+            {
+                RAOE(AutoMenu.SliderValue("Raoe"));
+            }
         }
 
         public override void Combo()
         {
-            var target = TargetSelector.GetTarget(Q.Range, DamageType.Magical);
-            if (target == null || !target.IsKillable(Q.Range))
-                return;
+            var qtarget = Q.GetTarget();
+            var rtarget = MyBall == null ? null : EntityManager.Heroes.Enemies.FirstOrDefault(e => RWillHit(e) && e.IsKillable() && R.WillKill(e));
+            var etarget = EntityManager.Heroes.Enemies.OrderByDescending(TargetSelector.GetPriority).FirstOrDefault(e => e.IsKillable(BallRange) && EHit(e) != null);
+            var rhit = ComboMenu.SliderValue("Raoe");
+            var QReady = Q.IsReady() && ComboMenu.CheckBoxValue("Q");
+            var WReady = W.IsReady() && ComboMenu.CheckBoxValue("W");
+            var EReady = E.IsReady() && ComboMenu.CheckBoxValue("E");
+            var RReady = R.IsReady() && ComboMenu.CheckBoxValue("R");
 
-            if (Q.IsReady() && ComboMenu.CheckBoxValue(Q.Slot))
+            if (R.IsReady())
             {
-                Q.Cast(target, HitChance.Low);
+                if (rtarget != null && RReady)
+                {
+                    RCast(rtarget);
+                    return;
+                }
+                if (ComboMenu.CheckBoxValue("aoeR"))
+                {
+                    if (RAOE(rhit))
+                    {
+                        // the check does everything
+                    }
+                    else if (AllyForR(rhit) != null && EReady)
+                    {
+                        E.Cast(AllyForR(rhit));
+                        return;
+                    }
+                    else if (ComboMenu.CheckBoxValue("QR"))
+                    {
+                        QRAoE(rhit);
+                    }
+                }
             }
-            if (W.IsReady() && OriannaBall != null && target.PredictPosition().IsInRange(OriannaBall, W.Range) && ComboMenu.CheckBoxValue(W.Slot))
+
+            if (qtarget != null)
+            {
+                if (QReady)
+                {
+                    QCast(qtarget);
+                }
+            }
+            if (WReady && EntityManager.Heroes.Enemies.Count(e => WHit(e)) >= ComboMenu.SliderValue("Whit"))
             {
                 W.Cast();
             }
-            if (ComboMenu.CheckBoxValue(R.Slot))
-                RAOE(ComboMenu.SliderValue("RAOE"));
+
+            if (EReady && etarget != null)
+            {
+                if (EHit(etarget) != null)
+                {
+                    E.Cast(EHit(etarget));
+                }
+            }
+
+            var WRtarget = EntityManager.Heroes.Enemies.Where(WRKill).FirstOrDefault(e => e.IsKillable() && WHit(e));
+            if (WRtarget != null)
+            {
+                if (WReady && RReady && RCast(WRtarget))
+                {
+                    W.Cast();
+                }
+            }
         }
 
         public override void Harass()
         {
-            var target = TargetSelector.GetTarget(Q.Range, DamageType.Magical);
-            if (target == null || !target.IsKillable(Q.Range))
-                return;
+            var qtarget = Q.GetTarget();
+            var etarget = EntityManager.Heroes.Enemies.OrderByDescending(TargetSelector.GetPriority).FirstOrDefault(e => e.IsKillable(BallRange) && EHit(e) != null);
 
-            if (Q.IsReady() && HarassMenu.CheckBoxValue(Q.Slot) && HarassMenu.CompareSlider(Q.Slot + "mana", user.ManaPercent))
+            var Qmana = HarassMenu.CompareSlider("Qmana", user.ManaPercent);
+            var Wmana = HarassMenu.CompareSlider("Wmana", user.ManaPercent);
+            var Emana = HarassMenu.CompareSlider("Emana", user.ManaPercent);
+
+            var QReady = Q.IsReady() && HarassMenu.CheckBoxValue("Q") && Qmana;
+            var WReady = W.IsReady() && HarassMenu.CheckBoxValue("W") && Wmana;
+            var EReady = E.IsReady() && HarassMenu.CheckBoxValue("E") && Emana;
+
+            if (qtarget != null)
             {
-                Q.Cast(target, HitChance.Low);
+                if (QReady)
+                {
+                    QCast(qtarget);
+                }
             }
-            if (W.IsReady() && OriannaBall != null && target.PredictPosition().IsInRange(OriannaBall, W.Range) && HarassMenu.CheckBoxValue(W.Slot)
-                && HarassMenu.CompareSlider(W.Slot + "mana", user.ManaPercent))
+            if (WReady && EntityManager.Heroes.Enemies.Count(e => WHit(e)) >= 1)
             {
                 W.Cast();
+            }
+
+            if (EReady && etarget != null)
+            {
+                if (EHit(etarget) != null)
+                {
+                    E.Cast(EHit(etarget));
+                }
             }
         }
 
         public override void LaneClear()
         {
-            foreach (var target in EntityManager.MinionsAndMonsters.EnemyMinions.Where(m => m != null && m.IsKillable(1000)))
+            var QReady = Q.IsReady() && LaneClearMenu.CheckBoxValue("Q") && LaneClearMenu.CompareSlider("Qmana", user.ManaPercent);
+            var WReady = W.IsReady() && LaneClearMenu.CheckBoxValue("W") && LaneClearMenu.CompareSlider("Wmana", user.ManaPercent);
+            var EReady = E.IsReady() && LaneClearMenu.CheckBoxValue("E") && LaneClearMenu.CompareSlider("Emana", user.ManaPercent);
+            var qhits = LaneClearMenu.SliderValue("Qhit");
+            var whits = LaneClearMenu.SliderValue("Whit");
+            var ehits = LaneClearMenu.SliderValue("Ehit");
+
+            if (QReady)
             {
-                if (Q.IsReady() && target.IsKillable(Q.Range) && LaneClearMenu.CheckBoxValue(Q.Slot) && LaneClearMenu.CompareSlider(Q.Slot + "mana", user.ManaPercent))
+                var qfarmloc = Q.SetSkillshot().GetBestCircularCastPosition(Q.Enemies());
+                if (LaneClearMenu.ComboBoxValue("Qfarm") == 1)
+                    qfarmloc = Q.SetSkillshot().GetBestLinearCastPosition(Q.Enemies(), 0, Q.SetSkillshot().SourcePosition.GetValueOrDefault(user.ServerPosition).To2D());
+                if (qfarmloc.HitNumber >= qhits)
                 {
-                    Q.Cast(target, HitChance.Low);
+                    Q.Cast(qfarmloc.CastPosition);
                 }
-                if (W.IsReady() && OriannaBall != null && target.PredictPosition().IsInRange(OriannaBall, W.Range) && LaneClearMenu.CheckBoxValue(W.Slot)
-                    && LaneClearMenu.CompareSlider(W.Slot + "mana", user.ManaPercent))
+            }
+            if (WReady)
+            {
+                var whit = EntityManager.Enemies.Count(e => WHit(e));
+                if (whit >= whits)
                 {
                     W.Cast();
+                }
+            }
+            if (EReady)
+            {
+                var etarget = EFarmTarget(ehits);
+                if (etarget != null)
+                {
+                    E.Cast(etarget);
                 }
             }
         }
 
         public override void Flee()
         {
-            if (!AutoMenu.CheckBoxValue("W") || OriannaBall == null || !W.IsReady())
-                return;
-
-            if (EntityManager.Heroes.Enemies.Any(e => e != null && e.PredictPosition().Distance(user) < 400) && user.PredictHealthPercent() < 25 && user.ManaPercent > 10)
+            if (AutoMenu.CheckBoxValue("flee"))
             {
-                if (OriannaBall.IsInRange(user, W.Range))
+                if (AutoMenu.CheckBoxValue("fleeenemy") && user.CountEnemyHeroesInRangeWithPrediction(1250) > 0 || !AutoMenu.CheckBoxValue("fleeenemy"))
                 {
-                    W.Cast();
+                    if (W.IsReady())
+                    {
+                        if (WHit(user) || MyBall != null && MyBall.ServerPosition.Equals(user.ServerPosition))
+                        {
+                            W.Cast();
+                        }
+                        else
+                        {
+                            if (E.IsReady() && user.Mana > W.ManaCost + E.ManaCost)
+                            {
+                                E.Cast(user);
+                            }
+                        }
+                    }
                 }
             }
         }
 
         public override void KillSteal()
         {
-            foreach (var target in EntityManager.Heroes.Enemies.Where(m => m != null && m.IsKillable(1000)))
+            var Qtarget = Q.GetKillStealTarget();
+            var qready = Q.IsReady() && KillStealMenu.CheckBoxValue("Q") && Qtarget != null;
+            var Wtarget = W.GetKillStealTargets().FirstOrDefault(e => W.WillKill(e) && WHit(e));
+            var wready = W.IsReady() && KillStealMenu.CheckBoxValue("W") && Wtarget != null;
+            var Etarget = E.GetKillStealTargets().FirstOrDefault(e => EHit(e) != null);
+            var eready = E.IsReady() && KillStealMenu.CheckBoxValue("E") && Etarget != null;
+            var Rtarget = R.GetKillStealTargets().FirstOrDefault(RWillHit);
+            var rready = R.IsReady() && KillStealMenu.CheckBoxValue("R") && Rtarget != null;
+
+            if (qready)
             {
-                if (Q.IsReady() && Q.WillKill(target) && target.IsKillable(Q.Range) && KillStealMenu.CheckBoxValue(Q.Slot))
+                Q.Cast(Qtarget);
+            }
+            if (wready)
+            {
+                W.Cast();
+            }
+            if (eready)
+            {
+                E.Cast(EHit(Etarget));
+            }
+            if (rready)
+            {
+                R.Cast();
+            }
+        }
+
+        private static void BetaAntiGapCloser()
+        {
+            if (!AutoMenu.CheckBoxValue("Rgap") || !R.IsReady())
+                return;
+
+            if (user.HealthPercent > 50 && user.CountEnemyHeroesInRangeWithPrediction(1250) < 2)
+                return;
+
+            foreach (var gapcloser in Cache.GapclosersCache.Where(g => g.Sender.IsKillable(BallRange) && g.Sender.IsEnemy))
+            {
+                var caster = gapcloser.Sender;
+                if (RWillHit(caster))
                 {
-                    Q.Cast(target, HitChance.Low);
+                    RCast();
+                    break;
                 }
-                if (W.IsReady() && W.WillKill(target) && OriannaBall != null && target.PredictPosition().IsInRange(OriannaBall, W.Range) && KillStealMenu.CheckBoxValue(W.Slot))
+
+                bool CanER = false;
+                AIHeroClient EAlly = AllyNear(gapcloser.Args.End);
+                if (E.IsReady())
                 {
-                    W.Cast();
+                    CanER = user.Mana > E.Mana() + R.Mana() && EAlly != null && AutoMenu.CheckBoxValue("Ehelp");
                 }
-                if (R.IsReady() && R.WillKill(target) && OriannaBall != null && target.PredictPosition().IsInRange(OriannaBall, R.Range) && KillStealMenu.CheckBoxValue(R.Slot))
+                if (CanER)
                 {
-                    R.Cast();
+                    E.Cast(EAlly);
+                    break;
+                }
+            }
+        }
+        private static void BetInterrupter()
+        {
+            if (!AutoMenu.CheckBoxValue("Rint") || !R.IsReady())
+                return;
+
+            foreach (var interruptable in Cache.InteruptablesCache.Where(i => i.Sender.IsKillable() && i.Sender.IsEnemy && (i.Args.DangerLevel > DangerLevel.Low || user.WillDie())))
+            {
+                var caster = interruptable.Sender as AIHeroClient;
+                if (caster == null)
+                    break;
+
+                if (RWillHit(caster))
+                {
+                    RCast();
+                    break;
+                }
+                bool CanER = false;
+                AIHeroClient EAlly = AllyNear(caster);
+                if (E.IsReady())
+                {
+                    CanER = user.Mana > E.Mana() + R.Mana() && EAlly != null && AutoMenu.CheckBoxValue("Ehelp");
+                }
+                if (CanER)
+                {
+                    E.Cast(EAlly);
+                    break;
+                }
+            }
+        }
+        private static bool RAOE(int hitcount)
+        {
+            if (RWillHit(null, hitcount) && R.IsReady())
+            {
+                return RCast();
+            }
+            return false;
+        }
+
+        private static AIHeroClient AllyForR(int hitcount)
+        {
+            if (Cache.GapclosersCache.Count(g => g.Sender.IsAlly) == 0)
+            {
+                return
+                    EntityManager.Heroes.Allies.FirstOrDefault(
+                        a => MyBall?.ServerPosition != a.ServerPosition && a.IsValidTarget(E.Range) && CurrentRHits(a.ServerPosition) > CurrentRHits(MyBall?.ServerPosition));
+            }
+            return Cache.GapclosersCache.Where(a => a.Sender.IsAlly)
+                .OrderByDescending(a => a.Args.End.CountEnemyHeroesInRangeWithPrediction(250 + Game.Ping))
+                .FirstOrDefault(a => a.Sender.IsValidTarget(E.Range) && RWillHit(a.Args.End, hitcount) && a.Args.End.IsInRange(user, BallRange))?.Sender;
+        }
+
+        private static AIHeroClient AllyNear(Vector3 pos)
+        {
+            return EntityManager.Heroes.Allies.OrderBy(a => a.Distance(pos)).FirstOrDefault(a => a.IsValidTarget(E.Range) && a.PredictPosition().IsInRange(user, BallRange) && a.PredictPosition().IsInRange(pos, R.Range));
+        }
+
+        private static AIHeroClient AllyNear(Obj_AI_Base target)
+        {
+            return AllyNear(target.PredictPosition());
+        }
+
+        private static int CurrentRHits(Vector3? pos)
+        { return pos == null ? 0 : EntityManager.Heroes.Enemies.Count(e => e.IsKillable() && RHit(e)); }
+        private static int PredictedRHits(Vector3? pos)
+        { return pos == null ? 0 : EntityManager.Heroes.Enemies.Count(e => e.IsKillable() && RPredHit(e)); }
+
+        private static bool RWillHit(Vector3? sourcepos = null, int hitcount = 0)
+        {
+            if (sourcepos == null)
+                sourcepos = MyBall?.ServerPosition;
+            if (sourcepos == null)
+                return false;
+
+            var pos = sourcepos.Value;
+            var nohits = PredictedRHits(pos) == 0 && CurrentRHits(pos) == 0;
+            if (nohits)
+                return false;
+
+            if (hitcount == 0)
+                return !nohits;
+
+            var totalhits = EntityManager.Heroes.Enemies.Count(e => e.IsKillable() && RWillHit(e));
+            return CurrentRHits(pos) >= hitcount && PredictedRHits(pos) >= hitcount && totalhits >= hitcount && PredictedRHits(pos) >= CurrentRHits(pos);
+        }
+
+        private static bool RWillHit(AIHeroClient target)
+        {
+            if (MyBall == null || target.WillDie() || !target.IsKillable() || target.IsGapClosing() && !MyBall.IsInRange(target.GapCloseEndPos(), R.Range))
+                return false;
+
+            if (target.IsCC())
+                return true;
+
+            return RPredHit(target) && RHit(target);
+        }
+        private static bool RPredHit(AIHeroClient target)
+        {
+            if (MyBall == null || target == null || target.IsDashing())
+                return false;
+
+            return target.PredictPosition(400 + Game.Ping).IsInRange(MyBall, R.Range);
+        }
+        private static bool RHit(AIHeroClient target)
+        {
+            if (MyBall == null || target == null || target.IsDashing())
+                return false;
+            return target.ServerPosition.IsInRange(MyBall, R.Range);
+        }
+
+        private static bool WRKill(Obj_AI_Base target)
+        {
+            return WRDmg(target) > target.TotalShieldHealth();
+        }
+        private static float WRDmg(Obj_AI_Base target)
+        {
+            if (W.Mana() + R.Mana() > user.Mana || MyBall == null || target == null || !target.IsKillable() || !WHit(target))
+                return 0;
+
+            var dmg = 0f;
+
+            if (W.IsReady())
+            {
+                dmg += user.GetSpellDamage(target, SpellSlot.W);
+            }
+            if (R.IsReady())
+            {
+                dmg += user.GetSpellDamage(target, SpellSlot.R);
+            }
+            return dmg;
+        }
+
+        private static bool WHit(Obj_AI_Base target, bool checkbuffs = true)
+        {
+            if (MyBall == null || target == null || (checkbuffs && !target.IsKillable() || !checkbuffs))
+                return false;
+            return target.PredictPosition().IsInRange(MyBall, W.Range) && target.ServerPosition.IsInRange(MyBall, W.Range);
+        }
+
+        private static bool ROverKill(AIHeroClient target)
+        {
+            if (user.WillDie())
+            {
+                return false;
+            }
+
+            if (target.HasBuff("SummonerDot") || target.HasBuff("SummonerIgnite"))
+                return true;
+            if (Q.IsReady() && Q.WillKill(target) && target.IsKillable(Q.Range))
+                return true;
+            if (W.IsReady() && W.WillKill(target) && WHit(target))
+                return true;
+            if (E.IsReady() && E.WillKill(target) && EHit(target) != null)
+                return true;
+            if (target.AlliesAADamage() > target.TotalShieldHealth())
+                return true;
+
+            return false;
+        }
+
+        private static bool RCast(AIHeroClient target = null)
+        {
+            if (target != null && ROverKill(target))
+                return false;
+
+            if (R.IsReady() && RWillHit())
+            {
+                return R.Cast();
+            }
+            return false;
+        }
+
+        private static AIHeroClient EHit(Obj_AI_Base target)
+        {
+            if (target == null || MyBall == null)
+                return null;
+            return EntityManager.Heroes.Allies.OrderBy(a => a.Distance(target))
+                .FirstOrDefault(a => a.IsValidTarget(E.Range) && ERect(a).IsInside(target));
+        }
+
+        private static AIHeroClient EFarmTarget(int hits)
+        {
+            if (MyBall == null)
+                return null;
+            return EntityManager.Heroes.Allies.Where(a => E.IsInRange(a) && a.IsValidTarget()).FirstOrDefault(a => E.LaneMinions().Count(e => ERect(a).IsInside(e)) >= hits);
+        }
+
+        private static Geometry.Polygon.Rectangle ERect(Obj_AI_Base end)
+        {
+            return new Geometry.Polygon.Rectangle(MyBall.ServerPosition, end.ServerPosition, MyBall.BoundingRadius);
+        }
+        private static void QCast(Obj_AI_Base target, int hitchance = 30)
+        {
+            if (target == null)
+                return;
+
+            var qpred = QPred(target);
+            if (qpred.HitChancePercent >= hitchance)
+            {
+                Q.Cast(qpred.CastPosition);
+            }
+            else
+            {
+                if (qpred.HitChance <= HitChance.Impossible
+                    && (target.IsCC() || target.Distance(user) <= 250
+                    || (MyBall != null && target.Distance(MyBall.ServerPosition) <= 250)))
+                {
+                    Q.Cast(target.ServerPosition);
                 }
             }
         }
 
-        private static void RAOE(int hits)
+        private static PredictionResult QPred(Obj_AI_Base target)
         {
-            if (OriannaBall != null && R.IsReady())
+            var data = new Prediction.Position.PredictionData(Prediction.Position.PredictionData.PredictionType.Linear,
+                (int)Q.Range, Q.SetSkillshot().Width, Q.SetSkillshot().ConeAngleDegrees, Q.CastDelay, Q.SetSkillshot().Speed, int.MaxValue, MyBall?.ServerPosition);
+            var qpred = Prediction.Position.GetPrediction(target, data);
+            return qpred;
+        }
+
+        private static bool QRAoE(int hits)
+        {
+            if (!Q.IsReady() || !R.IsReady())
+                return false;
+            var targets = EntityManager.Heroes.Enemies.Where(e => e.IsKillable(Q.Range + R.Range / 2f));
+            var possiblepos = QR.GetBestCircularCastPosition(targets);
+            if (possiblepos.HitNumber >= hits)
             {
-                if (EntityManager.Heroes.Enemies.Count(e => e != null && e.IsKillable(1100) && e.PredictPosition().IsInRange(OriannaBall, R.Range)) >= hits)
-                {
-                    R.Cast();
-                }
+                return Q.Cast(possiblepos.CastPosition);
             }
+            return false;
         }
     }
 }

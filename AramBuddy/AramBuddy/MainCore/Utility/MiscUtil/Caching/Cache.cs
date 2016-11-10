@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using EloBuddy;
 using EloBuddy.SDK;
 using EloBuddy.SDK.Events;
+using SharpDX;
 
 namespace AramBuddy.MainCore.Utility.MiscUtil.Caching
 {
-    internal class Cache
+    internal static class Cache
     {
-        private static float LastUpdate;
-
         public static List<Interuptables> InteruptablesCache = new List<Interuptables>();
         public static List<Gapclosers> GapclosersCache = new List<Gapclosers>();
         public static void Init()
@@ -21,15 +21,11 @@ namespace AramBuddy.MainCore.Utility.MiscUtil.Caching
 
         private static void Game_OnTick(EventArgs args)
         {
-            if (Core.GameTickCount - LastUpdate > 250)
-            {
-                InteruptablesCache.RemoveAll(s => Game.Time - s.Args.EndTime >= 0
-                || (s.Sender != null && (s.Sender.IsDead || (!s.Sender.Spellbook.IsCastingSpell && !s.Sender.Spellbook.IsChanneling && !s.Sender.Spellbook.IsCharging))));
-                GapclosersCache.RemoveAll(
-                    s => Core.GameTickCount - s.Args.TickCount > 1000
-                    || s.Sender != null && (s.Args.End.Equals(s.Sender.Position) || s.Args.End.Equals(s.Sender.ServerPosition) || s.Sender.IsDead || (s.IsDash && !s.Sender.IsDashing())));
-                LastUpdate = Core.GameTickCount;
-            }
+            InteruptablesCache.RemoveAll(s => Game.Time - s.Args.EndTime >= 0
+            || (s.Sender != null && (s.Sender.IsDead || (!s.Sender.Spellbook.IsCastingSpell && !s.Sender.Spellbook.IsChanneling && !s.Sender.Spellbook.IsCharging))));
+            GapclosersCache.RemoveAll(
+                s => Core.GameTickCount - s.Args.TickCount > 1000
+                || s.Sender != null && (s.Args.End.Equals(s.Sender.Position) || s.Args.End.Equals(s.Sender.ServerPosition) || s.Sender.IsDead || (s.IsDash && !s.Sender.IsDashing())));
         }
 
         private static void Gapcloser_OnGapcloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
@@ -50,6 +46,25 @@ namespace AramBuddy.MainCore.Utility.MiscUtil.Caching
                 if (!InteruptablesCache.Contains(info))
                     InteruptablesCache.Add(info);
             }
+        }
+
+        public static Vector3 GapCloseEndPos(this AIHeroClient target)
+        {
+            var end = GapclosersCache.FirstOrDefault(g => g.Sender.IdEquals(target))?.Args.End;
+            if (end != null)
+                return (Vector3)end;
+            return Vector3.Zero;
+        }
+        public static bool IsGapClosing(this AIHeroClient target)
+        {
+            if (target == null)
+                return false;
+
+            return GapclosersCache.Any(g => g.Sender.IdEquals(target));
+        }
+        public static bool CanBeInterrupted(this Obj_AI_Base target)
+        {
+            return InteruptablesCache.Any(g => g.Sender.IdEquals(target));
         }
     }
 }

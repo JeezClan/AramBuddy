@@ -59,7 +59,7 @@ namespace AramBuddy.Plugins.Activator.Spells.AutoShield
                         foreach (var ally in EntityManager.Heroes.Allies)
                         {
                             menu.CreateCheckBox(ally.Name() + shield.Spell.Slot, "Use " + shield.Spell.Slot + " for " + ally.Name());
-                            menu.CreateSlider(ally.Name() + shield.Spell.Slot + "hp", "Use " + shield.Spell.Slot + " for " + ally.Name() + " On {0}% HP", TargetSelector.GetPriority(ally) * 10);
+                            menu.CreateSlider(ally.Name() + shield.Spell.Slot + "hp", "Use " + shield.Spell.Slot + " for " + ally.Name() + " On {0}% HP", TargetSelector.GetPriority(ally) * 15);
                             menu.AddSeparator(0);
                         }
                     }

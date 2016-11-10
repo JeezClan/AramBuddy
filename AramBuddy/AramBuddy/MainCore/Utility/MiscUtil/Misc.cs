@@ -268,6 +268,26 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
             return DistanceFromEnemies(target.PredictPosition());
         }
 
+        public static bool CanKill(this AIHeroClient hero, AIHeroClient target)
+        {
+            return hero.GetAutoAttackDamage(target, true) >= target.TotalShieldHealth() && target.IsKillable(hero.GetAutoAttackRange(target));
+        }
+
+        public static IEnumerable<AIHeroClient> GetKillStealTargets(this Spell.SpellBase spell)
+        {
+            return EntityManager.Heroes.Enemies.OrderByDescending(TargetSelector.GetPriority).Where(o => spell.WillKill(o) && o.IsKillable());
+        }
+
+        public static AIHeroClient GetKillStealTarget(this Spell.SpellBase spell)
+        {
+            return spell.GetKillStealTargets().FirstOrDefault(o => o.IsKillable(spell.Range));
+        }
+
+        public static float AlliesAADamage(this Obj_AI_Base target)
+        {
+            return EntityManager.Allies.Where(a => a.IsValidTarget() && a.IsInRange(target, a.GetAutoAttackRange(target))).Sum(d => d.GetAutoAttackDamage(target, true));
+        }
+
         /// <summary>
         ///     Returns true if the target stacked with bots
         /// </summary>
@@ -481,6 +501,14 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         public static bool IsBigMinion(this Obj_AI_Base target)
         {
             return target.BaseSkinName.ToLower().Contains("siege") || target.BaseSkinName.ToLower().Contains("super");
+        }
+
+        /// <summary>
+        ///     Returns Enemies In Spell Range.
+        /// </summary>
+        public static IEnumerable<Obj_AI_Base> Enemies(this Spell.SpellBase spell)
+        {
+            return EntityManager.Enemies.Where(m => m.IsKillable() && m.IsInRange(spell.RangeCheckSource ?? Player.Instance.ServerPosition, spell.Range));
         }
 
         /// <summary>
@@ -730,6 +758,14 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         }
 
         /// <summary>
+        ///     Returns ComboBox Value.
+        /// </summary>
+        public static int ComboBoxValue(this Menu m, string id)
+        {
+            return m[id].Cast<ComboBox>().CurrentValue;
+        }
+
+        /// <summary>
         ///     Returns true if the value is >= the slider.
         /// </summary>
         public static bool CompareSlider(this Menu m, string id, float value)
@@ -751,6 +787,11 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         public static bool WillDie(this Obj_AI_Base target, Spell.SpellBase spell)
         {
             return spell.GetHealthPrediction(target) <= 0;
+        }
+
+        public static bool WillDie(this Obj_AI_Base target, int Time = 250)
+        {
+            return target.PredictHealth() <= 0;
         }
 
         /// <summary>

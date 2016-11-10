@@ -1,1 +1,1 @@
-Better Draven Axes
+Fix Freezing on game start

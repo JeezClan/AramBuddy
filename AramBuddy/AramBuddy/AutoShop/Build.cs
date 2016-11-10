@@ -70,34 +70,34 @@ namespace AramBuddy.AutoShop
             try
             {
                 var filename = BuildName() + ".json";
-
-                using (var WebClient = new WebClient())
+                var WebClient = new WebClient();
+                var request = WebClient.DownloadStringTaskAsync("https://raw.githubusercontent.com/plsfixrito/AramBuddy/master/DefaultBuilds/" + filename);
+                WebClient.DownloadStringCompleted += delegate(object sender, DownloadStringCompletedEventArgs args)
                 {
-                    using (var request = WebClient.DownloadStringTaskAsync("https://raw.githubusercontent.com/plsfixrito/AramBuddy/master/DefaultBuilds/" + filename))
+                    if (args.Cancelled)
                     {
-                        if (request.IsFaulted || request.IsCanceled)
+                        Logger.Send("Wrong Response, Or Request Was Cancelled", Logger.LogLevel.Warn);
+                        Logger.Send(args.Error?.InnerException?.Message, Logger.LogLevel.Warn);
+                        Console.WriteLine(args.Result);
+                    }
+                    else
+                    {
+                        if (args.Result != null && args.Result.Contains("data"))
                         {
-                            Logger.Send("Wrong Response, Or Request Was Cancelled", Logger.LogLevel.Warn);
-                            Logger.Send(request?.Exception?.InnerException?.Message, Logger.LogLevel.Warn);
-                            Console.WriteLine(request.Result);
+                            File.WriteAllText(Setup.BuildPath + "\\" + filename, args.Result);
+                            Setup.Builds.Add(BuildName(), File.ReadAllText(Setup.BuildPath + "\\" + filename));
+                            Logger.Send(BuildName() + " Build Created for " + Player.Instance.ChampionName + " - " + BuildName());
+                            Setup.DefaultBuild();
                         }
                         else
                         {
-                            if (request.Result != null && request.Result.Contains("data"))
-                            {
-                                File.WriteAllText(Setup.BuildPath + "\\" + filename, request.Result);
-                                Setup.Builds.Add(BuildName(), File.ReadAllText(Setup.BuildPath + "\\" + filename));
-                                Logger.Send(BuildName() + " Build Created for " + Player.Instance.ChampionName + " - " + BuildName());
-                                Setup.DefaultBuild();
-                            }
-                            else
-                            {
-                                Logger.Send("Wrong Response, No Champion Build Created", Logger.LogLevel.Warn);
-                                Console.WriteLine(request.Result);
-                            }
+                            Logger.Send("Wrong Response, No Champion Build Created", Logger.LogLevel.Warn);
+                            Console.WriteLine(args.Result);
                         }
                     }
-                }
+                    request.Dispose();
+                    WebClient.Dispose();
+                };
             }
             catch (Exception ex)
             {
@@ -116,35 +116,38 @@ namespace AramBuddy.AutoShop
             {
                 var filename = CleanUpChampionName(Player.Instance.ChampionName) + ".json";
 
-                using (var WebClient = new WebClient())
+                var WebClient = new WebClient();
+                var request = WebClient.DownloadStringTaskAsync("https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "/" + filename);
+                
+                WebClient.DownloadStringCompleted += delegate(object sender, DownloadStringCompletedEventArgs args)
                 {
-                    using (var request = WebClient.DownloadStringTaskAsync("https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "/" + filename))
+                    if (!args.Cancelled)
                     {
-                        if (request != null && !request.IsCanceled && !request.IsFaulted)
+                        if (args.Result.Contains("data"))
                         {
-                            if (request.Result.Contains("data"))
-                            {
-                                File.WriteAllText(Setup.BuildPath + "\\" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "\\" + filename, request.Result);
-                                Setup.Builds.Add(CleanUpChampionName(Player.Instance.ChampionName), File.ReadAllText(Setup.BuildPath + "\\" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "\\" + filename));
-                                Logger.Send("Created Build for " + Player.Instance.ChampionName);
-                                Setup.CustomBuildService();
-                            }
-                            else
-                            {
-                                Logger.Send("Wrong Response, No Champion Build Created !", Logger.LogLevel.Warn);
-                                Logger.Send("Trying To Get Defualt Build !", Logger.LogLevel.Warn);
-                                Setup.UseDefaultBuild();
-                                //Console.WriteLine(args.Result);
-                            }
+                            File.WriteAllText(Setup.BuildPath + "\\" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "\\" + filename, args.Result);
+                            Setup.Builds.Add(CleanUpChampionName(Player.Instance.ChampionName), File.ReadAllText(Setup.BuildPath + "\\" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "\\" + filename));
+                            Logger.Send("Created Build for " + Player.Instance.ChampionName);
+                            Setup.CustomBuildService();
                         }
                         else
                         {
-                            Logger.Send("Failed Getting build, No Response !", Logger.LogLevel.Warn);
+                            Logger.Send("Wrong Response, No Champion Build Created !", Logger.LogLevel.Warn);
                             Logger.Send("Trying To Get Defualt Build !", Logger.LogLevel.Warn);
                             Setup.UseDefaultBuild();
+                            //Console.WriteLine(args.Result);
                         }
                     }
-                }
+                    else
+                    {
+                        Logger.Send("Failed Getting build, No Response !", Logger.LogLevel.Warn);
+                        Logger.Send("Trying To Get Defualt Build !", Logger.LogLevel.Warn);
+                        Setup.UseDefaultBuild();
+                    }
+
+                    request.Dispose();
+                    WebClient.Dispose();
+                };
             }
             catch (Exception ex)
             {
