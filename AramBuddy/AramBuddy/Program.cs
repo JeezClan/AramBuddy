@@ -36,6 +36,8 @@ namespace AramBuddy
 
         public static List<BuildServices> BuildsServices = new List<BuildServices>();
 
+        private static string Texturefile = Misc.AramBuddyFolder + "\\temp\\DisableTexture1.dat";
+
         public static bool CrashAIODetected;
         public static bool CustomChamp;
         public static bool Loaded;
@@ -48,19 +50,19 @@ namespace AramBuddy
 
         public static string Moveto;
 
-        public static Menu MenuIni, SpellsMenu, MiscMenu, BuildMenu;
+        public static Menu MenuIni, SpellsMenu, MiscMenu, BuildMenu, InfoMenu;
 
         private static float textsize;
         private static Text text;
 
         private static void Main()
         {
-            if (File.Exists(Misc.AramBuddyFolder + "\\temp\\DisableTexture.dat"))
+            if (Game.MapId == GameMapId.HowlingAbyss && File.Exists(Texturefile))
             {
                 Hacks.DisableTextures = true;
                 ManagedTexture.OnLoad += delegate (OnLoadTextureEventArgs texture) { texture.Process = false; };
             }
-            
+
             Loading.OnLoadingComplete += Loading_OnLoadingComplete;
         }
 
@@ -199,16 +201,7 @@ namespace AramBuddy
                 // Inits Activator
                 if (EnableActivator)
                     Plugins.Activator.Load.Init();
-
-                if (DisableTexture)
-                {
-                    Misc.CreateAramBuddyFile("DisableTexture.dat", Misc.AramBuddyDirectories.Temp);
-                }
-                else
-                {
-                    File.Delete(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\EloBuddy\\AramBuddy\\temp\\DisableTexture.dat");
-                }
-
+                
                 Chat.Print("AramBuddy Loaded !");
                 Chat.Print("AramBuddy Version: " + version);
             }
@@ -233,6 +226,7 @@ namespace AramBuddy
                 MenuIni.AddGroupLabel("AramBuddy Settings");
 
                 BuildMenu = MenuIni.AddSubMenu("Current Build");
+                InfoMenu = MenuIni.AddSubMenu("Extra Options");
                 
                 var lolversion = BuildMenu.Add("buildpatch", new ComboBox("Select Build Patch: ", 0, BuildsServices.Select(s => s.Patch).ToArray()));
                 var buildsource = BuildMenu.Add("buildsource", new ComboBox("Builds Service: ", 0, BuildsServices[lolversion.CurrentValue].AvailableServices));
@@ -261,7 +255,7 @@ namespace AramBuddy
                 var quit = MenuIni.CreateCheckBox("quit", "Quit On Game End");
                 var stealhr = MenuIni.CreateCheckBox("stealhr", "Dont Steal Health Relics From Allies", false);
                 var chat = MenuIni.CreateCheckBox("chat", "Send Start / End msg In-Game Chat", false);
-                var texture = MenuIni.CreateCheckBox("texture", "Disable In-Game Texture (Less RAM/CPU)", false);
+                var texture = MenuIni.CreateCheckBox("texture1", "Disable In-Game Texture (Less RAM/CPU)", false);
                 var evade = MenuIni.CreateCheckBox("evade", "Evade Integration[BETA]");
                 var ff = MenuIni.CreateCheckBox("ff", "Vote Surrender With Team Always");
                 var cameralock = MenuIni.CreateCheckBox("cameralock", "Lock Camera Always");
@@ -350,12 +344,54 @@ namespace AramBuddy
                 SpellsMenu.Add("Flash", new CheckBox("Use Flash"));
                 SpellsMenu.Add("Cleanse", new CheckBox("Use Cleanse"));
 
+                InfoMenu.AddGroupLabel("Disabling In-Game Texture");
+                InfoMenu.AddLabel("To Disable In-Game Texture Type In Chat \"Disable Texture\"");
+                InfoMenu.AddLabel("To Enable In-Game Texture Type In Chat \"Enable Texture\"");
+                InfoMenu.AddLabel("Takes affect after 1 or 2 games");
+
                 Console.Title = $"{Drawing.Width}x{Drawing.Height}";
+
+                texture.IsVisible = false;
+
+                if (DisableTexture)
+                    Disabletexture();
+                else
+                    Enabletexture();
+
+                Chat.OnInput += delegate(ChatInputEventArgs args)
+                    {
+                        if (args.Input.ToLower().Contains("disable texture"))
+                        {
+                            Disabletexture();
+                            texture.CurrentValue = true;
+                            args.Process = false;
+                        }
+                        if (args.Input.ToLower().Contains("enable texture"))
+                        {
+                            Enabletexture();
+                            texture.CurrentValue = false;
+                            args.Process = false;
+                        }
+                    };
             }
             catch (Exception ex)
             {
                 Logger.Send("Program Error At CreateMenu", ex, Logger.LogLevel.Error);
             }
+        }
+
+        private static void Enabletexture()
+        {
+            if (File.Exists(Texturefile))
+            {
+                File.Delete(Texturefile);
+                Logger.Send("Texture Enabled !", Logger.LogLevel.Event);
+            }
+        }
+        private static void Disabletexture()
+        {
+            Misc.CreateAramBuddyFile("DisableTexture1.dat", Misc.AramBuddyDirectories.Temp);
+            Logger.Send("Texture Disabled !", Logger.LogLevel.Event);
         }
         
         private static void Drawing_OnEndScene(EventArgs args)

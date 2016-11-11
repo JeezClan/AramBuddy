@@ -1,1 +1,1 @@
-Fixed all Bugsplats
+Removed Disable Texture Option

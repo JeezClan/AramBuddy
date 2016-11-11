@@ -17,7 +17,7 @@ namespace AramBuddy
         public static bool QuitOnGameEnd => MenuIni.CheckBoxValue("quit");
         public static bool DontStealHR => MenuIni.CheckBoxValue("stealhr");
         public static bool EnableChat => MenuIni.CheckBoxValue("chat");
-        public static bool DisableTexture => MenuIni.CheckBoxValue("texture");
+        public static bool DisableTexture => MenuIni.CheckBoxValue("texture1");
         public static bool EnableEvade => MenuIni.CheckBoxValue("evade");
         public static bool Enableff => MenuIni.CheckBoxValue("ff");
         public static bool CameraLock => MenuIni.CheckBoxValue("cameralock");
