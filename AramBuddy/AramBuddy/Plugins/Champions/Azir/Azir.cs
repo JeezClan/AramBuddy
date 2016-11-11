@@ -78,9 +78,16 @@ namespace AramBuddy.Plugins.Champions.Azir
             if (target == null || !target.IsKillable(Q.Range))
                 return;
 
-            if (Orbwalker.ValidAzirSoldiers.Count < 1 && W.IsReady() && ComboMenu.CheckBoxValue(W.Slot))
+            if (W.IsReady() && ComboMenu.CheckBoxValue(W.Slot))
             {
-                W.Cast(target);
+                if (!W.IsInRange(target))
+                {
+                    W.Cast(user.ServerPosition.Extend(target, W.Range).To3D());
+                }
+                else
+                {
+                    W.Cast(target);
+                }
             }
             else
             {
@@ -106,9 +113,16 @@ namespace AramBuddy.Plugins.Champions.Azir
             if (target == null || !target.IsKillable(Q.Range))
                 return;
 
-            if (Orbwalker.ValidAzirSoldiers.Count < 1 && W.IsReady() && HarassMenu.CheckBoxValue(W.Slot) && HarassMenu.CompareSlider(W.Slot + "mana", user.ManaPercent))
+            if (W.IsReady() && HarassMenu.CheckBoxValue(W.Slot) && HarassMenu.CompareSlider(W.Slot + "mana", user.ManaPercent))
             {
-                W.Cast(target);
+                if (!W.IsInRange(target))
+                {
+                    W.Cast(user.ServerPosition.Extend(target, W.Range).To3D());
+                }
+                else
+                {
+                    W.Cast(target);
+                }
             }
             else
             {
@@ -127,9 +141,16 @@ namespace AramBuddy.Plugins.Champions.Azir
         {
             foreach (var target in EntityManager.MinionsAndMonsters.EnemyMinions.Where(e => e != null && e.IsKillable(Q.Range)))
             {
-                if (Orbwalker.ValidAzirSoldiers.Count < 1 && W.IsReady() && LaneClearMenu.CheckBoxValue(W.Slot) && LaneClearMenu.CompareSlider(W.Slot + "mana", user.ManaPercent))
+                if (W.IsReady() && LaneClearMenu.CheckBoxValue(W.Slot) && LaneClearMenu.CompareSlider(W.Slot + "mana", user.ManaPercent))
                 {
-                    W.Cast(target);
+                    if (!W.IsInRange(target))
+                    {
+                        W.Cast(user.ServerPosition.Extend(target, W.Range).To3D());
+                    }
+                    else
+                    {
+                        W.Cast(target);
+                    }
                 }
                 else
                 {
