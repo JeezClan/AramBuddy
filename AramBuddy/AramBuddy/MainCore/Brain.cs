@@ -184,7 +184,7 @@ namespace AramBuddy.MainCore
         /// </summary>
         public static bool Alone()
         {
-            return Player.Instance.CountAllyHeros(4500) < 2 || Player.Instance.Path.Any(p => p.IsInRange(Game.CursorPos, 45))
+            return Player.Instance.CountAllyHeros(4500) <= 1 || Player.Instance.Path.Any(p => p.IsInRange(Game.CursorPos, 45))
                    || EntityManager.Heroes.Allies.All(a => !a.IsMe && (a.IsInShopRange() || a.IsInFountainRange() || !a.IsActive()));
         }
 

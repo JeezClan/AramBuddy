@@ -485,14 +485,6 @@ namespace AramBuddy.MainCore.Logics
                 }
             }
 
-            // if SafestAllyToFollow2 exsists moves to SafestAllyToFollow2.
-            if (ObjectsManager.SafestAllyToFollow2 != null)
-            {
-                Program.Moveto = "SafestAllyToFollow2";
-                Position = ObjectsManager.SafestAllyToFollow2.PredictPosition().Extend(ObjectsManager.AllySpawn, 100).Random();
-                return true;
-            }
-
             // if NearestEnemyMinion exsists moves to NearestEnemyMinion.
             if (ObjectsManager.NearestEnemyMinion != null && ObjectsManager.AllySpawn != null && ModesManager.LaneClear && Player.Instance.PredictHealthPercent() > 20)
             {
@@ -501,6 +493,14 @@ namespace AramBuddy.MainCore.Logics
                 return true;
             }
 
+            // if SafestAllyToFollow2 exsists moves to SafestAllyToFollow2.
+            if (ObjectsManager.SafestAllyToFollow2 != null)
+            {
+                Program.Moveto = "SafestAllyToFollow2";
+                Position = ObjectsManager.SafestAllyToFollow2.PredictPosition().Extend(ObjectsManager.AllySpawn, 100).Random();
+                return true;
+            }
+            
             // if Minion not exsist picks other to follow.
             if (ObjectsManager.AllyMinion != null)
             {

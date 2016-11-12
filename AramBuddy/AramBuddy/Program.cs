@@ -57,10 +57,17 @@ namespace AramBuddy
 
         private static void Main()
         {
-            if (Game.MapId == GameMapId.HowlingAbyss && File.Exists(Texturefile))
+            if (Game.MapId == GameMapId.HowlingAbyss)
             {
-                Hacks.DisableTextures = true;
-                ManagedTexture.OnLoad += delegate (OnLoadTextureEventArgs texture) { texture.Process = false; };
+                if (File.Exists(Texturefile))
+                {
+                    Hacks.DisableTextures = true;
+                    ManagedTexture.OnLoad += delegate(OnLoadTextureEventArgs texture) { texture.Process = false; };
+                }
+            }
+            else
+            {
+                return;
             }
 
             Loading.OnLoadingComplete += Loading_OnLoadingComplete;

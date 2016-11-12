@@ -942,6 +942,11 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         {
             var spawntime = 0;
 
+            if (Game.MapId == GameMapId.HowlingAbyss)
+            {
+                return hero.Level * 2 + 4;
+            }
+
             var BRW = hero.Level * 2.5 + 7.5;
             if (Game.Time > 900 && Game.Time < 1800)
             {
