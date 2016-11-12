@@ -947,21 +947,28 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
                 return hero.Level * 2 + 4;
             }
 
+            var currentminutes = Game.Time / 60;
+
             var BRW = hero.Level * 2.5 + 7.5;
-            if (Game.Time > 900 && Game.Time < 1800)
+
+            if (currentminutes > 15 && currentminutes < 30)
             {
-                spawntime = (int)(BRW + ((BRW / 100) * ((Game.Time / 60) - 15) * 2 * 0.425));
+                spawntime = (int)(BRW + ((BRW / 100) * (currentminutes - 15) * 2 * 0.425));
             }
 
-            if (Game.Time > 1800 && Game.Time < 2700)
+            if (currentminutes > 30 && currentminutes < 45)
             {
-                spawntime = (int)(BRW + ((BRW / 100) * ((Game.Time / 60) - 15) * 2 * 0.425) + ((BRW / 100) * ((Game.Time / 60) - 30) * 2 * 0.30) + ((BRW / 100) * ((Game.Time / 60) - 45) * 2 * 1.45));
+                spawntime = (int)(BRW + ((BRW / 100) * (currentminutes - 15) * 2 * 0.425) + ((BRW / 100) * (currentminutes - 30) * 2 * 0.30));
             }
 
-            if (Game.Time > 3210)
+            if (currentminutes > 45 && currentminutes < 53.5)
             {
-                spawntime =
-                    (int)((BRW + ((BRW / 100) * ((Game.Time / 60) - 15) * 2 * 0.425) + ((BRW / 100) * ((Game.Time / 60) - 30) * 2 * 0.30) + ((BRW / 100) * ((Game.Time / 60) - 45) * 2 * 1.45)) * 1.5f);
+                spawntime = (int)(BRW + ((BRW / 100) * (currentminutes - 15) * 2 * 0.425) + ((BRW / 100) * (currentminutes - 30) * 2 * 0.30) * ((BRW / 100) * (currentminutes - 45) * 2 * 1.45));
+            }
+
+            if (currentminutes > 53.5)
+            {
+                spawntime = (int)((BRW + ((BRW / 100) * (currentminutes - 15) * 2 * 0.425) + ((BRW / 100) * (currentminutes - 30) * 2 * 0.30) + ((BRW / 100) * (currentminutes - 45) * 2 * 1.45)) * 1.5f);
             }
 
             if (spawntime == 0)
