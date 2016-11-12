@@ -944,7 +944,7 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
 
             if (Game.MapId == GameMapId.HowlingAbyss)
             {
-                return hero.Level * 2 + 4;
+                return Math.Max(10, hero.Level * 2 + 4);
             }
 
             var currentminutes = Game.Time / 60;
