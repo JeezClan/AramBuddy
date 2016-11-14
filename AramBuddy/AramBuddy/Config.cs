@@ -21,7 +21,7 @@ namespace AramBuddy
         public static bool EnableEvade => MenuIni.CheckBoxValue("evade");
         public static bool Enableff => MenuIni.CheckBoxValue("ff");
         public static bool CameraLock => MenuIni.CheckBoxValue("cameralock");
-        public static int SafeValue => MenuIni.SliderValue("Safe") + 75;
+        public static int SafeValue => MenuIni.SliderValue("Safe1") + 75;
         public static int HealthRelicHP => MenuIni.SliderValue("HRHP");
         public static int HealthRelicMP => MenuIni.SliderValue("HRMP");
 

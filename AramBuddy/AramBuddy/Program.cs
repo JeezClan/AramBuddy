@@ -268,9 +268,9 @@ namespace AramBuddy
                 var cameralock = MenuIni.CreateCheckBox("cameralock", "Lock Camera Always");
 
                 MenuIni.AddSeparator(0);
-                var Safe = MenuIni.CreateSlider("Safe", "Safe Slider (Recommended 1250)", 1250, 0, 2500);
-                MenuIni.AddLabel("More Safe Value = more defensive playstyle");
-                MenuIni.AddSeparator(0);
+                var Safe = MenuIni.CreateSlider("Safe1", "Safe Slider (Recommended 1250)", 1250, 0, 2500);
+                //MenuIni.AddLabel("More Safe Value = more defensive playstyle");
+                //MenuIni.AddSeparator(0);
                 var HRHP = MenuIni.CreateSlider("HRHP", "Health Percent To Pick Health Relics (Recommended 75%)", 75);
                 var HRMP = MenuIni.CreateSlider("HRMP", "Mana Percent To Pick Health Relics (Recommended 15%)", 15);
                 MenuIni.AddSeparator(0);
@@ -334,7 +334,8 @@ namespace AramBuddy
                         tyler1g.CurrentValue = 3000;
                     }
                 };
-                
+
+                Safe.IsVisible = false; // disabled
                 corkibomb.IsVisible = false; // disable for now
 
                 SpellsMenu.AddGroupLabel("Built-In Casting Logic:");
