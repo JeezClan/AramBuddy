@@ -65,7 +65,24 @@ namespace AramBuddy.AutoShop
             try
             {
                 var filename = $"{BuildName()}.json";
-
+                var WebClient = new WebClient();
+                WebClient.DownloadStringTaskAsync($"https://raw.githubusercontent.com/plsfixrito/AramBuddy/master/DefaultBuilds/{filename}");
+                WebClient.DownloadStringCompleted += delegate(object sender, DownloadStringCompletedEventArgs args)
+                    {
+                        if (args.Result.Contains("data"))
+                        {
+                            File.WriteAllText(Setup.BuildPath + "\\" + filename, args.Result);
+                            Setup.Builds.Add(BuildName(), File.ReadAllText(Setup.BuildPath + "\\" + filename));
+                            Logger.Send(BuildName() + " Build Created for " + Player.Instance.ChampionName + " - " + BuildName());
+                            Setup.DefaultBuild();
+                        }
+                        else
+                        {
+                            Logger.Send("Wrong Response, No Champion Build Created", Logger.LogLevel.Warn);
+                            Console.WriteLine(args.Result);
+                        }
+                    };
+                /*
                 using (var WebClient = new WebClient())
                 {
                     using (var request = WebClient.DownloadStringTaskAsync("https://raw.githubusercontent.com/plsfixrito/AramBuddy/master/DefaultBuilds/" + filename))
@@ -92,7 +109,7 @@ namespace AramBuddy.AutoShop
                             }
                         }
                     }
-                }
+                }*/
             }
             catch (Exception ex)
             {
@@ -109,8 +126,27 @@ namespace AramBuddy.AutoShop
         {
             try
             {
-                var filename = Player.Instance.CleanChampionName() + ".json";
-
+                var filename = $"{Player.Instance.CleanChampionName()}.json";
+                var WebClient = new WebClient();
+                WebClient.DownloadStringTaskAsync($"https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/{Config.CurrentPatchUsed}/{Config.CurrentBuildService}/{filename}");
+                WebClient.DownloadStringCompleted += delegate(object sender, DownloadStringCompletedEventArgs args)
+                    {
+                        if (args.Result.Contains("data"))
+                        {
+                            var filepath = $"{Setup.BuildPath}/{Config.CurrentPatchUsed}/{Config.CurrentBuildService}/{filename}";
+                            File.WriteAllText(filepath, args.Result);
+                            Setup.Builds.Add(Player.Instance.CleanChampionName(), File.ReadAllText(filepath));
+                            Logger.Send("Created Build for " + Player.Instance.ChampionName);
+                            Setup.CustomBuildService();
+                        }
+                        else
+                        {
+                            Logger.Send("Wrong Response or was canceled, No Champion Build Created !", Logger.LogLevel.Warn);
+                            Logger.Send("Trying To Get Defualt Build !", Logger.LogLevel.Warn);
+                            Setup.UseDefaultBuild();
+                        }
+                    };
+                /*
                 using (var WebClient = new WebClient())
                 {
                     using (var request = WebClient.DownloadStringTaskAsync("https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "/" + filename))
@@ -139,7 +175,7 @@ namespace AramBuddy.AutoShop
                             Setup.UseDefaultBuild();
                         }
                     }
-                }
+                }*/
             }
             catch (Exception ex)
             {

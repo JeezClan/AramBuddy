@@ -372,7 +372,7 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         {
             get
             {
-                return EntityManager.Heroes.Enemies.OrderBy(e => e.Distance(Player.Instance)).ThenByDescending(e => e.CountAllyHeros(Config.SafeValue + 100))
+                return EntityManager.Heroes.Enemies.OrderBy(e => e.Distance(AllySpawn)).ThenByDescending(e => e.CountAllyHeros(Config.SafeValue + 100))
                     .FirstOrDefault(e => e.IsKillable() && e.CountAllyHeros(Config.SafeValue) > 1 && e.IsSafe());
             }
         }
@@ -415,10 +415,10 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
                 return
                     EntityManager.Heroes.Allies.OrderByDescending(a => a.Distance(AllySpawn))
                         //.ThenByDescending(Misc.KDA)
-                        //.ThenByDescending(a => Misc.TeamTotal(a.PredictPosition()))
+                        .ThenByDescending(a => Misc.TeamTotal(a.PredictPosition()))
                         .Where(
-                            a => !a.IsMe && !a.StackedBots() && (Player.Instance.PredictHealthPercent() > 15 || a.CountEnemyHeros(Config.SafeValue) <= 1 || a.IsUnderHisturret()) && a.IsSafe() &&
-                            a.IsValidTarget() && (a.PredictHealthPercent() > 15 || a.CountEnemyHeros(Config.SafeValue) == 0) && !a.IsZombie() && a.IsActive());
+                            a => !a.IsMe && !a.StackedBots() && (Player.Instance.PredictHealthPercent() > 20 || a.CountEnemyHeros(Config.SafeValue) <= 1) && a.IsSafe() &&
+                            a.IsValidTarget() && a.PredictHealthPercent() > 20 && !a.IsInFountainRange() && !a.IsZombie() && a.IsActive());
             }
         }
 
@@ -463,7 +463,7 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         {
             get
             {
-                return BestAlliesToFollow.OrderBy(a => a.Distance(Player.Instance)).ThenByDescending(a => Misc.TeamTotal(a.PredictPosition()) - Misc.TeamTotal(a.PredictPosition(), true)).FirstOrDefault();
+                return BestAlliesToFollow.OrderBy(a => a.Distance(Player.Instance)).FirstOrDefault(a => Misc.TeamTotal(a.PredictPosition()) - Misc.TeamTotal(a.PredictPosition(), true) > 0);
             }
         }
 
@@ -475,7 +475,8 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
             get
             {
                 return BestAlliesToFollow.OrderBy(a => a.DistanceFromAllHeros())//.ThenByDescending(a => Misc.TeamTotal(a.PredictPosition()) - Misc.TeamTotal(a.PredictPosition(), true))
-                        .FirstOrDefault(a => a.IsSafe() && a.Distance(Player.Instance) > 100 + Player.Instance.BoundingRadius + a.BoundingRadius);
+                        .FirstOrDefault(a => a.CountAllyHeros(Config.SafeValue * 1.1f) + 1 >= a.CountEnemyHeros(Config.SafeValue)
+                        && a.Distance(Player.Instance) > 100 + Player.Instance.BoundingRadius + a.BoundingRadius);
             }
         }
 
@@ -525,16 +526,16 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
                     Orbwalker.PriorityLastHitWaitingMinionsList.OrderBy(m => m.Distance(Player.Instance))
                         .FirstOrDefault(
                             m =>
-                            m.IsKillable(Player.Instance.GetAutoAttackRange(m) + 500) && (m.CountEnemyHeros() == 0 || m.CountAllyHeros() >= m.CountEnemyHeros()) && Misc.TeamTotal(m.PredictPosition()) >= Misc.TeamTotal(m.PredictPosition(), true)
+                            m.IsKillable(Player.Instance.GetAutoAttackRange(m) + 500) && (m.CountEnemyHeros() == 0 || m.AlliesMoreThanEnemies()) && Misc.TeamTotal(m) > Misc.TeamTotal(m, true)
                             && m.CountAllyMinionsInRangeWithPrediction(Config.SafeValue) > 0 && Player.Instance.SafePath(m));
 
-                var lasthitminion = Orbwalker.LastHitMinionsList.OrderBy(m => m.Distance(Player.Instance)).FirstOrDefault(m => m.IsKillable(Player.Instance.GetAutoAttackRange(m) + 500) && (m.CountEnemyHeros() == 0 || m.CountAllyHeros() >= m.CountEnemyHeros())
+                var lasthitminion = Orbwalker.LastHitMinionsList.OrderBy(m => m.Distance(Player.Instance)).FirstOrDefault(m => m.IsKillable(Player.Instance.GetAutoAttackRange(m) + 500) && (m.CountEnemyHeros() == 0 || m.AlliesMoreThanEnemies())
                 && Misc.TeamTotal(m.PredictPosition()) >= Misc.TeamTotal(m.PredictPosition(), true) && m.CountAllyMinionsInRangeWithPrediction(Config.SafeValue) > 0 && Player.Instance.SafePath(m));
 
                 var minionnear =
                     EntityManager.MinionsAndMonsters.EnemyMinions.OrderBy(m => m.Distance(Player.Instance))
                         .FirstOrDefault(m => m.IsKillable() && Misc.TeamTotal(m.PredictPosition()) >= Misc.TeamTotal(m.PredictPosition(), true)
-                        && m.CountAllyMinionsInRangeWithPrediction(Config.SafeValue) > 0 && Player.Instance.SafePath(m) && (m.CountEnemyHeros() == 0 || m.CountAllyHeros() >= m.CountEnemyHeros()));
+                        && m.CountAllyMinionsInRangeWithPrediction(Config.SafeValue) > 0 && Player.Instance.SafePath(m) && (m.CountEnemyHeros() == 0 || m.AlliesMoreThanEnemies()));
 
                 return lasthitminion ?? lasthitableminion ?? minionnear;
             }

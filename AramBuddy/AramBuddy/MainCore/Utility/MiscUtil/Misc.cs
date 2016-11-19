@@ -681,13 +681,13 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         public static bool AlliesMoreThanEnemies(this Vector3 target, int range = -1)
         {
             range = range.Equals(-1) ? Config.SafeValue : range;
-            return target.CountAllyHeros(range) >= target.CountEnemyHeros(range);
+            return target.CountAllyHeros(range) > target.CountEnemyHeros(range);
         }
 
         public static bool EnemiesMoreThanAllies(this GameObject target, int range = -1)
         {
             range = range.Equals(-1) ? Config.SafeValue : range;
-            return target.CountEnemyHeros(range) >= target.CountAllyHeros(range);
+            return target.CountEnemyHeros(range) > target.CountAllyHeros(range);
         }
 
         /// <summary>
@@ -962,7 +962,7 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
             //var path = Player.Instance.GetPath(pos);
             return (pos.SafeDive() && Player.Instance.ServerPosition.Extend(pos, 750).To3DWorld().SafeDive() && ((Config.EnableEvade && !KappaEvade.dangerPolygons.Any(s => s.IsInside(pos) /*|| path.Any(s.IsInside)*/)
                 && !ObjectsManager.EnemyTraps.Select(t => new Geometry.Polygon.Circle(t.Trap.ServerPosition, t.Trap.BoundingRadius * 3))
-                .Any(c => c.IsInside(pos) /*|| path.Any(c.IsInside)*/)) || !Config.EnableEvade)) && (TeamTotal(pos) >= TeamTotal(pos, true) || pos.AlliesMoreThanEnemies()) || Player.Instance.IsZombie();
+                .Any(c => c.IsInside(pos) /*|| path.Any(c.IsInside)*/)) || !Config.EnableEvade)) && (TeamTotal(pos) > TeamTotal(pos, true) || pos.AlliesMoreThanEnemies()) || Player.Instance.IsZombie();
         }
 
         /// <summary>

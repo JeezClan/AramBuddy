@@ -13,41 +13,67 @@ namespace AramBuddy.MainCore.Utility
     internal class LvlupSpells
     {
         public static Levelset CurrentLevelset = new Levelset();
+        private static string LevelSetDirectory { get { return $"{Misc.AramBuddyFolder}\\LevelSets\\{Config.CurrentPatchUsed}"; } }
+        private static string LevelSetFile { get { return $"{Misc.AramBuddyFolder}\\LevelSets\\{Config.CurrentPatchUsed}\\{Player.Instance.CleanChampionName()}.json"; } }
+        private static string FileURL { get { return $"https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/{Config.CurrentPatchUsed}/LevelSets/{Player.Instance.CleanChampionName()}.json"; } }
+
         internal static void Init()
         {
-            /*var levelingfile = $"{Misc.AramBuddyFolder}\\LevelSets\\6.22.1\\{Player.Instance.CleanChampionName()}.json";
             try
             {
-                if (File.Exists(levelingfile))
+                if (File.Exists(LevelSetFile))
                 {
-                    TryParseData(File.ReadAllText(levelingfile), out CurrentLevelset);
+                    var filecontant = File.ReadAllText(LevelSetFile);
+                    if (filecontant.Contains("LevelSet"))
+                    {
+                        TryParseData(filecontant, out CurrentLevelset);
+                    }
+                    else
+                    {
+                        File.Delete(LevelSetFile);
+                        DownLoadLevelSet();
+                    }
                     Logger.Send($"Loaded LevelSet for {Player.Instance.ChampionName}");
                 }
                 else
                 {
-                    using (var webclient = new WebClient())
-                    {
-                        using (var request = webclient.DownloadStringTaskAsync($"https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/6.22.1/LevelSets/{Player.Instance.CleanChampionName()}.json"))
-                        {
-                            if (request.Result != null && request.Result.Contains("LevelSet"))
-                            {
-                                File.WriteAllText(levelingfile, request.Result);
-                                TryParseData(request.Result, out CurrentLevelset);
-                                Logger.Send($"Created LevelSet For {Player.Instance.ChampionName}");
-                            }
-                            else
-                            {
-                                Logger.Send("LvlupSpells: Wrong Respone or Was Canceled !");
-                            }
-                        }
-                    }
+                    DownLoadLevelSet();
                 }
             }
             catch (Exception ex)
             {
                 Logger.Send($"ERROR Failed to create level set for {Player.Instance.ChampionName}", ex, Logger.LogLevel.Error);
-            }*/
+            }
             Game.OnTick += Game_OnTick;
+        }
+
+        private static void DownLoadLevelSet()
+        {
+            try
+            {
+                if (!Directory.Exists(LevelSetDirectory))
+                    Directory.CreateDirectory(LevelSetDirectory);
+
+                var webclient = new WebClient();
+                webclient.DownloadStringAsync(new Uri(FileURL));
+                webclient.DownloadStringCompleted += delegate (object sender, DownloadStringCompletedEventArgs args)
+                {
+                    if (args.Result != null && args.Result.Contains("LevelSet"))
+                    {
+                        File.WriteAllText(LevelSetFile, args.Result);
+                        TryParseData(args.Result, out CurrentLevelset);
+                        Logger.Send($"Created LevelSet For {Player.Instance.ChampionName}");
+                    }
+                    else
+                    {
+                        Logger.Send("LvlupSpells: Wrong Respone or Was Canceled !");
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.Send("ERROR: ", ex, Logger.LogLevel.Error);
+            }
         }
 
         private static void Game_OnTick(EventArgs args)

@@ -30,8 +30,6 @@ namespace AramBuddy
         public static Dictionary<string, string[]> CurrentPatchs = new Dictionary<string, string[]>
             {
             {"6.22.1", new []{ "MetaSrc", "LoLSkill", "KoreanBuilds", "Championgg", "User Builds" } },
-            {"6.21.1", new []{ "MetaSrc", "LoLSkill", "KoreanBuilds", "Championgg", "User Builds" } },
-            {"6.20.1", new []{ "MetaSrc", "LoLSkill", "KoreanBuilds", "Championgg", "User Builds" } }
             };
 
         public static List<BuildServices> BuildsServices = new List<BuildServices>();

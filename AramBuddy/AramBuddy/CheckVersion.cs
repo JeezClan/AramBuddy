@@ -29,7 +29,7 @@ namespace AramBuddy
             try
             {
                 Logger.Send("Checking For Updates..");
-                var size = Drawing.Width <= 400 || Drawing.Height <= 400 ? 10F : 40F;
+                var size = Drawing.Width <= 1280 || Drawing.Height <= 720 ? 10F : 40F;
                 text = new Text("ARAMBUDDY OUTDATED! PLEASE UPDATE!", new Font("Euphemia", size, FontStyle.Bold)) { Color = Color.White };
                 var WebClient = new WebClient();
                 WebClient.DownloadStringTaskAsync(UpdateMsgPath);
