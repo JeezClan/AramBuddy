@@ -988,9 +988,9 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         public static bool SafePath(this Obj_AI_Base target, Vector3 point)
         {
             var betterpath = new Geometry.Polygon.Rectangle(target.ServerPosition, point, 400);
-            var moreenemiesinside = EntityManager.Heroes.AllHeroes.Where(betterpath.IsInside).Any(e => TeamTotal(e, true) > TeamTotal(e) && !e.IsDead && e.IsValid);
+            var moreallies = EntityManager.Heroes.Allies.Count(a => a.IsValidTarget() && betterpath.IsInside(a)) >= EntityManager.Heroes.Enemies.Count(a => a.IsValidTarget() && betterpath.IsInside(a));
 
-            return !moreenemiesinside && !PathUnderEnemyTurret(target, point) && point.IsSafe();
+            return moreallies && !PathUnderEnemyTurret(target, point) && point.IsSafe();
         }
 
         public static bool SafePath(this Obj_AI_Base target, GameObject point)
