@@ -4,7 +4,7 @@ using EloBuddy.SDK;
 
 namespace AramBuddy.MainCore.Logics
 {
-    class TeamFightsDetection
+    internal class TeamFightsDetection
     {
         public static void Init()
         {

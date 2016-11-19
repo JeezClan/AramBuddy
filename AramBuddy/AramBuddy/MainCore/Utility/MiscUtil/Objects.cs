@@ -17,7 +17,7 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
             public float StartTick;
             public float EndTick;
             public float TicksLeft { get { return Core.GameTickCount - this.EndTick; } }
-            public bool Finished { get { return Core.GameTickCount - this.EndTick <= 0; } }
+            public bool Finished { get { return this.TicksLeft <= 0; } }
         }
         public class OlafAxe
         {
@@ -31,7 +31,7 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
             public float StartTick;
             public float EndTick;
             public float TicksLeft { get { return Core.GameTickCount - this.EndTick; } }
-            public bool Finished { get { return Core.GameTickCount - this.EndTick <= 0; } }
+            public bool Finished { get { return this.TicksLeft <= 0; } }
         }
     }
 }

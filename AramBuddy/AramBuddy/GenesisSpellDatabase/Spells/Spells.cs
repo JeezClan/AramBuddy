@@ -1128,10 +1128,10 @@ namespace GenesisSpellLibrary.Spells
 
         public Katarina()
         {
-            this.Q = new Spell.Targeted(SpellSlot.Q, 675);
-            this.W = new Spell.Active(SpellSlot.W, 375);
-            this.E = new Spell.Targeted(SpellSlot.E, 700);
-            this.R = new Spell.Active(SpellSlot.R, 550);
+            this.Q = new Spell.Targeted(SpellSlot.Q, 625, DamageType.Magical);
+            this.W = new Spell.Active(SpellSlot.W, 375, DamageType.Magical);
+            this.E = new Spell.Skillshot(SpellSlot.E, 72, SkillShotType.Circular, 0, int.MaxValue, 50, DamageType.Magical);
+            this.R = new Spell.Active(SpellSlot.R, 550, DamageType.Magical);
             this.EisDangerDash = true;
         }
     }
@@ -1275,10 +1275,10 @@ namespace GenesisSpellLibrary.Spells
 
         public Leblanc()
         {
-            this.Q = new Spell.Targeted(SpellSlot.Q, 700);
-            this.W = new Spell.Skillshot(SpellSlot.W, 600, SkillShotType.Circular, 250, 1450, 250);
-            this.E = new Spell.Skillshot(SpellSlot.E, 950, SkillShotType.Linear, 250, 1550, 55) { AllowedCollisionCount = 0 };
-            this.R = new Spell.Targeted(SpellSlot.R, 950);
+            this.Q = new Spell.Targeted(SpellSlot.Q, 700, DamageType.Magical);
+            this.W = new Spell.Skillshot(SpellSlot.W, 600, SkillShotType.Circular, 250, 1450, 250, DamageType.Magical);
+            this.E = new Spell.Skillshot(SpellSlot.E, 950, SkillShotType.Linear, 250, 1550, 55, DamageType.Magical) { AllowedCollisionCount = 0 };
+            this.R = new Spell.Skillshot(SpellSlot.R, int.MaxValue, SkillShotType.Circular);
             this.EisCC = true;
         }
     }
@@ -1864,10 +1864,10 @@ namespace GenesisSpellLibrary.Spells
 
         public Rengar()
         {
-            this.Q = new Spell.Active(SpellSlot.Q);
-            this.W = new Spell.Skillshot(SpellSlot.W, 500, SkillShotType.Circular, 250, 2000, 100);
-            this.E = new Spell.Skillshot(SpellSlot.E, 1000, SkillShotType.Linear, 250, 1500, 140) { AllowedCollisionCount = 0 };
-            this.R = new Spell.Active(SpellSlot.R);
+            this.Q = new Spell.Skillshot(SpellSlot.Q, 700, SkillShotType.Cone, 250, 3000, 200, DamageType.Physical) { ConeAngleDegrees = 180, AllowedCollisionCount = int.MaxValue };
+            this.W = new Spell.Active(SpellSlot.W, 500, DamageType.Magical);
+            this.E = new Spell.Skillshot(SpellSlot.E, 1000, SkillShotType.Linear, 250, 1500, 140, DamageType.Physical) { AllowedCollisionCount = 0 };
+            this.R = new Spell.Active(SpellSlot.R, 2500);
             this.EisCC = true;
         }
     }
@@ -2257,10 +2257,10 @@ namespace GenesisSpellLibrary.Spells
 
         public Talon()
         {
-            this.Q = new Spell.Active(SpellSlot.Q);
-            this.W = new Spell.Skillshot(SpellSlot.W, 600, SkillShotType.Cone, 1, 2300, 75) { AllowedCollisionCount = int.MaxValue };
-            this.E = new Spell.Targeted(SpellSlot.E, 700);
-            this.R = new Spell.Active(SpellSlot.R);
+            this.Q = new Spell.Active(SpellSlot.Q, 550, DamageType.Physical);
+            this.W = new Spell.Skillshot(SpellSlot.W, 600, SkillShotType.Cone, 1, 2300, 75, DamageType.Physical) { AllowedCollisionCount = int.MaxValue };
+            this.E = new Spell.Skillshot(SpellSlot.E, 700, SkillShotType.Linear);
+            this.R = new Spell.Active(SpellSlot.R, 600, DamageType.Physical);
             this.EisDangerDash = true;
             this.WisCC = true;
         }

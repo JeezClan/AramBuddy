@@ -212,9 +212,9 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
         {
             get
             {
+                var alliesalive = EntityManager.Heroes.Allies.Count(a => a.IsValidTarget() && a.IsActive());
                 return EntityManager.Heroes.Allies.Count(a => 
-                a.IsAttackPlayer() && a.CountAllyHeros(Config.SafeValue) > 1
-                && a.IsValidTarget() && Player.Instance.PredictHealthPercent() > 20 && !a.IsMe) >= 2;
+                (a.IsAttackPlayer() || a.IsAttackingPlayer) && a.CountAllyHeros(Config.SafeValue) > 1 && a.IsValidTarget()) > alliesalive / 2;
             }
         }
 
@@ -228,6 +228,29 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
                 return target.BaseSkinName + "(" + target.Name + ")";
             }
             return target.BaseSkinName;
+        }
+
+        public static string CleanChampionName(this AIHeroClient hero)
+        {
+            return hero.ChampionName.CleanChampionName();
+        }
+
+        public static string CleanChampionName(this string str)
+        {
+            var clean = str.Trim().Replace("\'", "").Replace(".", "").Replace(" ", "");
+            if (clean.Equals("MonkeyKing"))
+                return "Wukong";
+            if (clean.Equals("Chogath"))
+                return "ChoGath";
+            if (clean.Equals("Kogmaw"))
+                return "KogMaw";
+            if (clean.Equals("Leesin"))
+                return "LeeSin";
+            if (clean.Equals("Khazix"))
+                return "KhaZix";
+            if (clean.Equals("Velkoz"))
+                return "VelKoz";
+            return clean;
         }
 
         /// <summary>
@@ -655,6 +678,12 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
             return target.CountAllyHeros(range) >= target.CountEnemyHeros(range);
         }
 
+        public static bool AlliesMoreThanEnemies(this Vector3 target, int range = -1)
+        {
+            range = range.Equals(-1) ? Config.SafeValue : range;
+            return target.CountAllyHeros(range) >= target.CountEnemyHeros(range);
+        }
+
         public static bool EnemiesMoreThanAllies(this GameObject target, int range = -1)
         {
             range = range.Equals(-1) ? Config.SafeValue : range;
@@ -917,22 +946,56 @@ namespace AramBuddy.MainCore.Utility.MiscUtil
             return Prediction.Health.GetPrediction(target, Time) / target.MaxHealth * 100;
         }
 
+        /// <summary>
+        ///     Returns True if the dive is safe.
+        /// </summary>
         public static bool SafeDive(this Vector3 pos)
         {
             return SafeToDive && pos.UnderEnemyTurret() || !pos.UnderEnemyTurret() || Player.Instance.IsZombie();
         }
-        
+
+        /// <summary>
+        ///     Returns true if the positon is safe.
+        /// </summary>
         public static bool IsSafe(this Vector3 pos)
         {
             //var path = Player.Instance.GetPath(pos);
             return (pos.SafeDive() && Player.Instance.ServerPosition.Extend(pos, 750).To3DWorld().SafeDive() && ((Config.EnableEvade && !KappaEvade.dangerPolygons.Any(s => s.IsInside(pos) /*|| path.Any(s.IsInside)*/)
                 && !ObjectsManager.EnemyTraps.Select(t => new Geometry.Polygon.Circle(t.Trap.ServerPosition, t.Trap.BoundingRadius * 3))
-                .Any(c => c.IsInside(pos) /*|| path.Any(c.IsInside)*/)) || !Config.EnableEvade)) || Player.Instance.IsZombie();
+                .Any(c => c.IsInside(pos) /*|| path.Any(c.IsInside)*/)) || !Config.EnableEvade)) && (TeamTotal(pos) >= TeamTotal(pos, true) || pos.AlliesMoreThanEnemies()) || Player.Instance.IsZombie();
         }
 
+        /// <summary>
+        ///     Returns true if the target is safe.
+        /// </summary>
         public static bool IsSafe(this Obj_AI_Base target)
         {
             return target.PredictPosition().IsSafe();
+        }
+
+        public static bool PathUnderEnemyTurret(this Obj_AI_Base target, Vector3 point)
+        {
+            var betterpath = new Geometry.Polygon.Rectangle(target.ServerPosition, point, 600);
+            var pathinsideenemyturret = EntityManager.Turrets.Enemies.Any(t => t.IsValid && !t.IsDead && !t.IsSafe() && betterpath.IsInside(t));
+            return pathinsideenemyturret;
+        }
+
+        public static bool PathUnderEnemyTurret(this Obj_AI_Base target, GameObject point)
+        {
+            return target.PathUnderEnemyTurret(point.Position);
+        }
+
+        public static bool SafePath(this Obj_AI_Base target, Vector3 point)
+        {
+            var betterpath = new Geometry.Polygon.Rectangle(target.ServerPosition, point, 400);
+            var moreenemiesinside = EntityManager.Heroes.AllHeroes.Where(betterpath.IsInside).Any(e => TeamTotal(e, true) > TeamTotal(e) && !e.IsDead && e.IsValid);
+
+            return !moreenemiesinside && !PathUnderEnemyTurret(target, point) && point.IsSafe();
+        }
+
+        public static bool SafePath(this Obj_AI_Base target, GameObject point)
+        {
+            return target.SafePath(point.Position);
         }
 
         /// <summary>

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using AramBuddy.MainCore.Logics.Casting;
 using AramBuddy.MainCore.Utility.MiscUtil;
@@ -209,13 +208,26 @@ namespace AramBuddy.MainCore.Logics
         {
             get
             {
+                var player = Player.Instance;
+                var noteamfight = Core.GameTickCount - Brain.LastTeamFight > 1500;
+                return (Misc.SafeToAttack && player.IsSafe() && noteamfight
+                        && (player.PredictHealthPercent() > 10 || player.CountEnemyHeros(SafeValue) == 0 || player.AlliesMoreThanEnemies(SafeValue) || Misc.TeamTotal(player) > Misc.TeamTotal(player, true))
+                        && (player.CountEnemyMinionsInRangeWithPrediction(SafeValue) > 0 || AttackObject)
+                        && (player.CountAllyMinionsInRangeWithPrediction(SafeValue) > 0 || player.CountAllyHeros(SafeValue) > 0 || player.IsUnderHisturret()))
+                        // alone logic
+                        || (Misc.SafeToAttack && Brain.Alone() && Player.Instance.CountEnemyHeros(SafeValue) < 1
+                        && Player.Instance.CountAllyMinionsInRangeWithPrediction(SafeValue) > 0
+                        && (Player.Instance.CountEnemyMinionsInRangeWithPrediction(SafeValue) > 0 || AttackObject));
+                /*
                 return Misc.SafeToAttack && Player.Instance.IsSafe() && Core.GameTickCount - Brain.LastTeamFight > 1500
                     && (Player.Instance.PredictHealthPercent() > 20 || Player.Instance.CountEnemyHeros(SafeValue) < 2)
                     && (Player.Instance.CountEnemyMinionsInRangeWithPrediction(SafeValue) > 0 || AttackObject)
                     && (Player.Instance.CountAllyMinionsInRangeWithPrediction(SafeValue) > 0 || Player.Instance.IsUnderHisturret() || Player.Instance.CountAllyHeros(SafeValue) > 1)
                     && (Player.Instance.CountEnemyHeros(SafeValue) <= 1 || Player.Instance.AlliesMoreThanEnemies() || Player.Instance.IsUnderHisturret()
                     || Misc.TeamTotal(Player.Instance.PredictPosition()) >= Misc.TeamTotal(Player.Instance.PredictPosition(), true)
-                    || Player.Instance.CountAllyHeros(SafeValue) >= Player.Instance.CountEnemyHeros(SafeValue));
+                    || Player.Instance.CountAllyHeros(SafeValue) >= Player.Instance.CountEnemyHeros(SafeValue))
+                    || (Brain.Alone() && Player.Instance.CountEnemyHeros(SafeValue) < 1 && Player.Instance.CountAllyMinionsInRangeWithPrediction(SafeValue) > 0
+                    && (Player.Instance.CountEnemyMinionsInRangeWithPrediction(SafeValue) > 0 || AttackObject));*/
             }
         }
 
@@ -249,9 +261,9 @@ namespace AramBuddy.MainCore.Logics
         {
             get
             {
-                return CurrentMode != Modes.Combo && (ObjectsManager.EnemyNexues != null && ObjectsManager.EnemyNexues.IsInRange(Player.Instance, Player.Instance.GetAutoAttackRange() + ObjectsManager.EnemyNexues.BoundingRadius * 3))
-                       || (ObjectsManager.EnemyInhb != null && ObjectsManager.EnemyInhb.IsInRange(Player.Instance, Player.Instance.GetAutoAttackRange() + ObjectsManager.EnemyInhb.BoundingRadius * 3))
-                       || (ObjectsManager.EnemyTurret != null && ObjectsManager.EnemyTurret.IsInRange(Player.Instance, Player.Instance.GetAutoAttackRange() + ObjectsManager.EnemyTurret.BoundingRadius * 3))
+                return (ObjectsManager.EnemyNexues != null && Player.Instance.SafePath(ObjectsManager.EnemyNexues))
+                       || (ObjectsManager.EnemyInhb != null && Player.Instance.SafePath(ObjectsManager.EnemyInhb))
+                       || (ObjectsManager.EnemyTurret != null && Player.Instance.SafePath(ObjectsManager.EnemyTurret))
                        || EntityManager.Heroes.Enemies.Count(e => e.IsDead) == 5 || (EntityManager.Heroes.Enemies.Count(e => e.IsDead) >= 3
                        && EntityManager.Heroes.Allies.Count(a => a.IsActive() && a.IsValidTarget(SafeValue)) >= EntityManager.Heroes.Enemies.Count(a => a.IsValidTarget(SafeValue)));
             }

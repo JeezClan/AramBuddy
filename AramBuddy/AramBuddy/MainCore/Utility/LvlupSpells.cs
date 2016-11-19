@@ -1,14 +1,47 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
+using AramBuddy.MainCore.Utility.MiscUtil;
 using EloBuddy;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace AramBuddy.MainCore.Utility
 {
     internal class LvlupSpells
     {
+        public static Levelset CurrentLevelset = new Levelset();
         internal static void Init()
         {
+            var levelingfile = $"{Misc.AramBuddyFolder}\\LevelSets\\6.22.1\\{Player.Instance.CleanChampionName()}.json";
+            try
+            {
+                if (File.Exists(levelingfile))
+                {
+                    TryParseData(File.ReadAllText(levelingfile), out CurrentLevelset);
+                    Logger.Send($"Loaded LevelSet for {Player.Instance.ChampionName}");
+                }
+                else
+                {
+                    var webclient = new WebClient();
+                    webclient.DownloadStringTaskAsync($"https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/6.22.1/LevelSets/{Player.Instance.CleanChampionName()}.json");
+                    webclient.DownloadStringCompleted += delegate (object sender, DownloadStringCompletedEventArgs args)
+                    {
+                        if (!args.Cancelled && args.Result.Contains("LevelSet"))
+                        {
+                            File.WriteAllText(levelingfile, args.Result);
+                            TryParseData(args.Result, out CurrentLevelset);
+                            Logger.Send($"Created LevelSet For {Player.Instance.ChampionName}");
+                        }
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Send($"ERROR Failed to create level set for {Player.Instance.ChampionName}", ex, Logger.LogLevel.Error);
+            }
             Game.OnTick += Game_OnTick;
         }
 
@@ -18,36 +51,45 @@ namespace AramBuddy.MainCore.Utility
                 LevelSpells();
         }
 
+        private static int R1()
+        {
+            if (Player.Instance.ChampionName == "Karma" || Player.Instance.ChampionName == "Nidalee" || Player.Instance.ChampionName == "Jayce")
+                return 1;
+            return 0;
+        }
         private static int I;
 
         private static void LevelSpells()
         {
-            var qL = Player.Instance.Spellbook.GetSpell(SpellSlot.Q).Level;
-            var wL = Player.Instance.Spellbook.GetSpell(SpellSlot.W).Level;
-            var eL = Player.Instance.Spellbook.GetSpell(SpellSlot.E).Level;
-            var rL = Player.Instance.Spellbook.GetSpell(SpellSlot.R).Level;
+            var qL = Player.Instance.Spellbook.GetSpell(SpellSlot.Q).Level - R1();
+            var wL = Player.Instance.Spellbook.GetSpell(SpellSlot.W).Level - R1();
+            var eL = Player.Instance.Spellbook.GetSpell(SpellSlot.E).Level - R1();
+            var rL = Player.Instance.Spellbook.GetSpell(SpellSlot.R).Level - R1();
 
             var level = new[] { 0, 0, 0, 0 };
-            if (qL + wL + eL + rL < Player.Instance.Level && Player.Instance.SpellTrainingPoints > 0)
+            if (qL + wL + eL + rL < Player.Instance.Level)
             {
-                int[] LevelSet = { };
+                int[] LevelSet = CurrentLevelset.LevelsetData;
 
-                if (Player.Instance.ChampionName.Equals("Ryze"))
+                if (LevelSet == null)
                 {
-                    LevelSet = MaxRyze;
-                }
+                    if (Player.Instance.ChampionName.Equals("Ryze"))
+                    {
+                        LevelSet = MaxRyze;
+                    }
 
-                if (MaxQChampions.Any(s => s.Equals(Player.Instance.ChampionName, StringComparison.CurrentCultureIgnoreCase)))
-                {
-                    LevelSet = MaxQSequence;
-                }
-                if (MaxWChampions.Any(s => s.Equals(Player.Instance.ChampionName, StringComparison.CurrentCultureIgnoreCase)))
-                {
-                    LevelSet = MaxWSequence;
-                }
-                if (MaxEChampions.Any(s => s.Equals(Player.Instance.ChampionName, StringComparison.CurrentCultureIgnoreCase)))
-                {
-                    LevelSet = MaxESequence;
+                    if (MaxQChampions.Any(s => s.Equals(Player.Instance.ChampionName, StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        LevelSet = MaxQSequence;
+                    }
+                    if (MaxWChampions.Any(s => s.Equals(Player.Instance.ChampionName, StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        LevelSet = MaxWSequence;
+                    }
+                    if (MaxEChampions.Any(s => s.Equals(Player.Instance.ChampionName, StringComparison.CurrentCultureIgnoreCase)))
+                    {
+                        LevelSet = MaxESequence;
+                    }
                 }
 
                 for (var i = 0; i < Player.Instance.Level; i++)
@@ -135,7 +177,7 @@ namespace AramBuddy.MainCore.Utility
 
         public static int[] MaxRyze
         {
-            get { return new[] {3, 1, 2, 3, 3, 4, 3, 1, 3, 1, 4, 1, 2, 1, 2, 1, 2, 2}; }
+            get { return new[] { 3, 1, 2, 3, 3, 4, 3, 1, 3, 1, 4, 1, 2, 1, 2, 1, 2, 2 }; }
         }
 
         /// <summary>
@@ -167,5 +209,52 @@ namespace AramBuddy.MainCore.Utility
             "Aatrox", "Anivia", "Cassiopeia", "Fiddlesticks", "Garen", "Kalista", "Kayle", "Lux", "Maokai", "Mordekaiser", "Nasus", "Nunu",
             "Shaco", "Shyvana", "Twitch", "Viktor"
         };
+
+        public static bool TryParseData(string data, out Levelset set)
+        {
+            try
+            {
+                dynamic parsed = JObject.Parse(data);
+                
+                int[] arr = parsed.LevelSet.ToObject<int[]>();
+                set = new Levelset { LevelsetData = arr };
+                return true;
+            }
+            catch (JsonSerializationException ex)
+            {
+                Logger.Send("Exception occurred in LevelSet on JSON parse:", ex, Logger.LogLevel.Error);
+                
+                Logger.Send("Exception occurred during LevelSet JSON parse. AutoShop will most likely NOT work properly!", Logger.LogLevel.Warn);
+                set = null;
+                if (Player.Instance.ChampionName.Equals("Ryze"))
+                {
+                    set = new Levelset(MaxRyze);
+                }
+
+                if (MaxQChampions.Any(s => s.Equals(Player.Instance.ChampionName, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    set = new Levelset(MaxQSequence);
+                }
+                if (MaxWChampions.Any(s => s.Equals(Player.Instance.ChampionName, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    set = new Levelset(MaxWSequence);
+                }
+                if (MaxEChampions.Any(s => s.Equals(Player.Instance.ChampionName, StringComparison.CurrentCultureIgnoreCase)))
+                {
+                    set = new Levelset(MaxESequence);
+                }
+                return false;
+            }
+        }
+
+        public class Levelset
+        {
+            public Levelset(int[] data = null)
+            {
+                if (data != null)
+                    this.LevelsetData = data;
+            }
+            public int[] LevelsetData { get; set; }
+        }
     }
 }

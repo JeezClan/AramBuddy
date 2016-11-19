@@ -98,7 +98,7 @@ namespace AramBuddy.AutoShop
                 }
 
                 // Check if there are any builds for our champion
-                if (Builds.Keys.All(b => Build.CleanUpChampionName(b) != Build.CleanUpChampionName(Player.Instance.ChampionName)))
+                if (Builds.Keys.All(b => b.CleanChampionName() != Player.Instance.CleanChampionName()))
                 {
                     // If not, warn the user
                     Logger.Send("There are no builds for your champion. " + Player.Instance.ChampionName, Logger.LogLevel.Warn);
@@ -113,7 +113,7 @@ namespace AramBuddy.AutoShop
 
                 // Check if the parse of the build for the champion completed successfully and output it to public
                 // variable CurrentChampionBuild
-                if (Builds.Any(b => Build.CleanUpChampionName(b.Key) == Build.CleanUpChampionName(Player.Instance.ChampionName)) && Builds.FirstOrDefault(b => Build.CleanUpChampionName(b.Key) == Build.CleanUpChampionName(Player.Instance.ChampionName)).Value.TryParseData(out CurrentChampionBuild))
+                if (Builds.Any(b => b.Key.CleanChampionName() == Player.Instance.CleanChampionName()) && Builds.FirstOrDefault(b => b.Key.CleanChampionName() == Player.Instance.CleanChampionName()).Value.TryParseData(out CurrentChampionBuild))
                 {
                     // If the parse is successful, notify the user that the initialization process is finished
                     Logger.Send(Config.CurrentPatchUsed + " " + Player.Instance.ChampionName + " Build Loaded !");
@@ -192,10 +192,10 @@ namespace AramBuddy.AutoShop
         {
             try
             {
-                if (Builds.Keys.Any(b => b.Equals(Build.CleanUpChampionName(Player.Instance.ChampionName)))
-                && Builds.FirstOrDefault(b => b.Key.Equals(Build.CleanUpChampionName(Player.Instance.ChampionName))).Value.TryParseData(out CurrentChampionBuild))
+                if (Builds.Keys.Any(b => b.Equals(Player.Instance.CleanChampionName()))
+                && Builds.FirstOrDefault(b => b.Key.Equals(Player.Instance.CleanChampionName())).Value.TryParseData(out CurrentChampionBuild))
                 {
-                    Logger.Send(Build.CleanUpChampionName(Player.Instance.ChampionName) + " build Loaded!");
+                    Logger.Send(Player.Instance.CleanChampionName() + " build Loaded!");
 
                     // and set up event listeners
                     SetUpEventListeners();

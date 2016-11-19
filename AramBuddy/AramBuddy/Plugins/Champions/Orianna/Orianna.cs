@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using AramBuddy.MainCore.Utility.MiscUtil.Caching;
 using AramBuddy.Plugins.KappaEvade;
 using EloBuddy;
@@ -9,18 +10,19 @@ using EloBuddy.SDK.Menu;
 using EloBuddy.SDK.Menu.Values;
 using SharpDX;
 using static AramBuddy.MainCore.Utility.MiscUtil.Misc;
+using static AramBuddy.Plugins.Champions.Orianna.BallManager;
 
 namespace AramBuddy.Plugins.Champions.Orianna
 {
     internal class Orianna : Base
     {
-        private static Obj_AI_Base MyBall;
-
         private static float BallRange = 1200;
         public static Spell.Skillshot QR { get; }
         static Orianna()
         {
             QR = new Spell.Skillshot(SpellSlot.Q, 820, SkillShotType.Circular, 450, 1400, 350, DamageType.Magical) { AllowedCollisionCount = int.MaxValue };
+
+            BallManager.Init();
 
             MenuIni = MainMenu.AddMenu(MenuName, MenuName);
             AutoMenu = MenuIni.AddSubMenu("Auto");
@@ -543,6 +545,56 @@ namespace AramBuddy.Plugins.Champions.Orianna
                 return Q.Cast(possiblepos.CastPosition);
             }
             return false;
+        }
+    }
+
+    internal static class BallManager
+    {
+        private static string[] BuffNames = new[] { "OrianaRedactShield", "OrianaGhostSelf", "OrianaGhost" };
+        private static string BallBaseSkinName = "OriannaBall";
+        private static string BallMissileName = "OrianaIzuna";
+        internal static Obj_AI_Base MyBall;
+        internal static void Init()
+        {
+            MyBall =
+                ObjectManager.Get<Obj_AI_Base>()
+                    .FirstOrDefault(o => o.HasBuff("OrianaGhostSelf") || o.HasBuff("OrianaGhost") && (o.GetBuff("OrianaGhost").Caster.IsMe || o.GetBuff("OrianaGhostSelf").Caster.IsMe));
+            GameObject.OnCreate += GameObject_OnCreate;
+            Obj_AI_Base.OnBuffGain += Obj_AI_Base_OnBuffGain;
+            Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
+        }
+
+        private static void Obj_AI_Base_OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
+        {
+            if (sender.IsMe)
+            {
+                if (args.Slot == SpellSlot.Q)
+                    MyBall = null;
+                if (args.Slot == SpellSlot.E && args.Target != null)
+                    MyBall = (Obj_AI_Base)args.Target;
+            }
+        }
+
+        private static void Obj_AI_Base_OnBuffGain(Obj_AI_Base sender, Obj_AI_BaseBuffGainEventArgs args)
+        {
+            if (args.Buff.Caster.IsMe && BuffNames.Contains(args.Buff.DisplayName))
+                MyBall = sender;
+        }
+
+        private static void GameObject_OnCreate(GameObject sender, EventArgs args)
+        {
+            var missile = sender as MissileClient;
+            if (missile != null && missile.SpellCaster.IsMe && missile.SData.Name.Equals(BallMissileName))
+                MyBall = ObjectManager.GetUnitByNetworkId<Obj_AI_Base>((uint)missile.NetworkId);
+
+            if (EntityManager.Heroes.AllHeroes.Count(a => a.ChampionName.Equals("Orianna")) > 1)
+                return;
+
+            var ball = sender as Obj_AI_Base;
+            if (ball != null && ball.IsAlly && ball.BaseSkinName.Equals(BallBaseSkinName))
+            {
+                MyBall = ball;
+            }
         }
     }
 }

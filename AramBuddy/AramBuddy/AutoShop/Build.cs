@@ -25,13 +25,8 @@ namespace AramBuddy.AutoShop
         /// </summary>
         public static string BuildName()
         {
-            var ChampionName = CleanUpChampionName(Player.Instance.ChampionName);
-
-            if (ChampionName.Equals("MonkeyKing", StringComparison.CurrentCultureIgnoreCase))
-            {
-                ChampionName = "Wukong";
-            }
-
+            var ChampionName = Player.Instance.CleanChampionName();
+            
             if (ADC.Any(s => s.Equals(ChampionName, StringComparison.CurrentCultureIgnoreCase)))
             {
                 return "ADC";
@@ -114,7 +109,7 @@ namespace AramBuddy.AutoShop
         {
             try
             {
-                var filename = CleanUpChampionName(Player.Instance.ChampionName) + ".json";
+                var filename = Player.Instance.CleanChampionName() + ".json";
 
                 using (var WebClient = new WebClient())
                 {
@@ -125,7 +120,7 @@ namespace AramBuddy.AutoShop
                             if (request.Result.Contains("data"))
                             {
                                 File.WriteAllText(Setup.BuildPath + "\\" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "\\" + filename, request.Result);
-                                Setup.Builds.Add(CleanUpChampionName(Player.Instance.ChampionName), File.ReadAllText(Setup.BuildPath + "\\" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "\\" + filename));
+                                Setup.Builds.Add(Player.Instance.CleanChampionName(), File.ReadAllText(Setup.BuildPath + "\\" + Config.CurrentPatchUsed + "\\" + Config.CurrentBuildService + "\\" + filename));
                                 Logger.Send("Created Build for " + Player.Instance.ChampionName);
                                 Setup.CustomBuildService();
                             }
@@ -154,11 +149,6 @@ namespace AramBuddy.AutoShop
                 Logger.Send("Trying To Get Defualt Build !", Logger.LogLevel.Warn);
                 Setup.UseDefaultBuild();
             }
-        }
-
-        public static string CleanUpChampionName(string str)
-        {
-            return str.Trim().Replace("\'", "").Replace(".", "").Replace(" ", "");
         }
 
         /// <summary>

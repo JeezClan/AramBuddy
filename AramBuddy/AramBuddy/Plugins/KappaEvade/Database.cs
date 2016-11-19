@@ -259,7 +259,7 @@ namespace AramBuddy.Plugins.KappaEvade
                      type = Type.LineMissile,
                      hero = Champion.Azir,
                      slot = SpellSlot.R,
-                     DangerLevel = 1,
+                     DangerLevel = 4,
                      CastDelay = 250,
                      Range = 700,
                      Speed = 2000,

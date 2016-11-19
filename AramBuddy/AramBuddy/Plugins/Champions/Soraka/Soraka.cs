@@ -122,10 +122,7 @@ namespace AramBuddy.Plugins.Champions.Soraka
             if (target == null || !target.IsKillable(Q.Range))
                 return;
 
-            foreach (
-                var spell in
-                    SpellList.Where(s => s.IsReady() && target.IsKillable(s.Range) && ComboMenu.CheckBoxValue(s.Slot))
-                        .Where(spell => spell != R && spell != W))
+            foreach (var spell in SpellList.Where(s => s.IsReady() && s != R && s != W && target.IsKillable(s.Range) && ComboMenu.CheckBoxValue(s.Slot)))
             {
                 spell.Cast(target, HitChance.Medium);
             }
@@ -141,9 +138,8 @@ namespace AramBuddy.Plugins.Champions.Soraka
                 var spell in
                     SpellList.Where(
                         s =>
-                            s.IsReady() && target.IsKillable(s.Range) && HarassMenu.CheckBoxValue(s.Slot) &&
-                            HarassMenu.CompareSlider(s.Slot + "mana", user.ManaPercent))
-                        .Where(spell => spell != R && spell != W))
+                            s.IsReady() && s != R && s != W && target.IsKillable(s.Range) && HarassMenu.CheckBoxValue(s.Slot) &&
+                            HarassMenu.CompareSlider(s.Slot + "mana", user.ManaPercent)))
             {
                 spell.Cast(target, HitChance.Medium);
             }
@@ -151,20 +147,13 @@ namespace AramBuddy.Plugins.Champions.Soraka
 
         public override void LaneClear()
         {
-            foreach (
-                var circFarmLoc in
-                    EntityManager.MinionsAndMonsters.EnemyMinions.Where(m => m != null && m.IsKillable(1000))
-                        .Select(
-                            target =>
-                                EntityManager.MinionsAndMonsters.GetCircularFarmLocation(
-                                    EntityManager.MinionsAndMonsters.EnemyMinions.Where(m => m.IsKillable(Q.Range)),
-                                    Q.SetSkillshot().Width, (int) Q.Range))
-                        .Where(
-                            circFarmLoc =>
-                                Q.IsReady() && circFarmLoc.HitNumber > 1 && LaneClearMenu.CheckBoxValue(SpellSlot.Q) &&
-                                LaneClearMenu.CompareSlider(W.Slot + "mana", user.ManaPercent)))
+            if (Q.IsReady() && LaneClearMenu.CheckBoxValue(SpellSlot.Q) && LaneClearMenu.CompareSlider("Qmana", user.ManaPercent))
             {
-                Q.Cast(circFarmLoc.CastPosition);
+                var farmloc = Q.SetSkillshot().GetBestCircularCastPosition(Q.Enemies());
+                if (farmloc.HitNumber > 1)
+                {
+                    Q.Cast(farmloc.CastPosition);
+                }
             }
         }
 
@@ -176,8 +165,7 @@ namespace AramBuddy.Plugins.Champions.Soraka
         {
             foreach (
                 var spell in
-                    SpellList.Where(s => s.IsReady() && KillStealMenu.CheckBoxValue(s.Slot))
-                        .Where(spell => spell != R && spell != W))
+                    SpellList.Where(s => s != R && s != W && s.IsReady() && KillStealMenu.CheckBoxValue(s.Slot)))
             {
                 foreach (
                     var target in

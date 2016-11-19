@@ -133,7 +133,7 @@ namespace AramBuddy.Plugins.Champions.Viktor
             var target = TargetSelector.GetTarget(1250, DamageType.Magical) ?? EntityManager.Heroes.Enemies.OrderBy(e => e.Distance(ViktorRObj?.Position ?? Game.CursorPos)).FirstOrDefault(e => e.IsKillable());
             if (IsCastingR && target != null)
             {
-                Player.Instance.Spellbook.CastSpell(SpellSlot.R, target.PredictPosition(), true, true);
+                Player.Instance.Spellbook.CastSpell(SpellSlot.R, target.PredictPosition(), true);
             }
         }
 
