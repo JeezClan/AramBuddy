@@ -15,7 +15,7 @@ namespace AramBuddy.MainCore.Utility
         public static Levelset CurrentLevelset = new Levelset();
         internal static void Init()
         {
-            var levelingfile = $"{Misc.AramBuddyFolder}\\LevelSets\\6.22.1\\{Player.Instance.CleanChampionName()}.json";
+            /*var levelingfile = $"{Misc.AramBuddyFolder}\\LevelSets\\6.22.1\\{Player.Instance.CleanChampionName()}.json";
             try
             {
                 if (File.Exists(levelingfile))
@@ -25,23 +25,28 @@ namespace AramBuddy.MainCore.Utility
                 }
                 else
                 {
-                    var webclient = new WebClient();
-                    webclient.DownloadStringTaskAsync($"https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/6.22.1/LevelSets/{Player.Instance.CleanChampionName()}.json");
-                    webclient.DownloadStringCompleted += delegate (object sender, DownloadStringCompletedEventArgs args)
+                    using (var webclient = new WebClient())
                     {
-                        if (!args.Cancelled && args.Result.Contains("LevelSet"))
+                        using (var request = webclient.DownloadStringTaskAsync($"https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/6.22.1/LevelSets/{Player.Instance.CleanChampionName()}.json"))
                         {
-                            File.WriteAllText(levelingfile, args.Result);
-                            TryParseData(args.Result, out CurrentLevelset);
-                            Logger.Send($"Created LevelSet For {Player.Instance.ChampionName}");
+                            if (request.Result != null && request.Result.Contains("LevelSet"))
+                            {
+                                File.WriteAllText(levelingfile, request.Result);
+                                TryParseData(request.Result, out CurrentLevelset);
+                                Logger.Send($"Created LevelSet For {Player.Instance.ChampionName}");
+                            }
+                            else
+                            {
+                                Logger.Send("LvlupSpells: Wrong Respone or Was Canceled !");
+                            }
                         }
-                    };
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Logger.Send($"ERROR Failed to create level set for {Player.Instance.ChampionName}", ex, Logger.LogLevel.Error);
-            }
+            }*/
             Game.OnTick += Game_OnTick;
         }
 

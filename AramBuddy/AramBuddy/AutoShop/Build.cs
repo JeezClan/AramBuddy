@@ -64,7 +64,7 @@ namespace AramBuddy.AutoShop
         {
             try
             {
-                var filename = BuildName() + ".json";
+                var filename = $"{BuildName()}.json";
 
                 using (var WebClient = new WebClient())
                 {
@@ -73,7 +73,7 @@ namespace AramBuddy.AutoShop
                         if (request.IsFaulted || request.IsCanceled)
                         {
                             Logger.Send("Wrong Response, Or Request Was Cancelled", Logger.LogLevel.Warn);
-                            Logger.Send(request?.Exception?.InnerException?.Message, Logger.LogLevel.Warn);
+                            Logger.Send(request.Exception?.InnerException?.Message, Logger.LogLevel.Warn);
                             Console.WriteLine(request.Result);
                         }
                         else
