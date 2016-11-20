@@ -22,17 +22,20 @@ namespace AramBuddy.Plugins.Activator.Spells.AutoShield
                     break;
             }
 
-            if (target == null || !target.IsKillable(shield.Spell.Range))
+            if (target == null || !target.IsKillable())
                 return false;
 
-            if (shield.Spell is Spell.Targeted || shield.Spell is Spell.Skillshot)
+            if (target.IsInRange(Player.Instance, shield.Spell.Range) || shield.Spell.Range == 0)
             {
-                return shield.Spell.Cast(target);
-            }
+                if (shield.Spell is Spell.Targeted || shield.Spell is Spell.Skillshot)
+                {
+                    return shield.Spell.Cast(target);
+                }
 
-            if (shield.Spell is Spell.Active)
-            {
-                return shield.Spell.Cast();
+                if (shield.Spell is Spell.Active)
+                {
+                    return shield.Spell.Cast();
+                }
             }
 
             return false;

@@ -77,6 +77,7 @@ namespace AramBuddy.Plugins.Activator.Spells.AutoShield
         {
             if (menu.SliderValue(Player.Instance.ChampionName + "hp") >= Player.Instance.PredictHealthPercent() || (!Player.Instance.IsNoManaHero() && menu.SliderValue(Player.Instance.ChampionName + "mp") >= Player.Instance.ManaPercent))
                 return;
+
             foreach (
                 var shield in
                     SheildsDatabase.Shields.Where(
