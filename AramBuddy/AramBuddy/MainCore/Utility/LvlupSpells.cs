@@ -58,15 +58,19 @@ namespace AramBuddy.MainCore.Utility
                 webclient.DownloadStringAsync(new Uri(FileURL));
                 webclient.DownloadStringCompleted += delegate (object sender, DownloadStringCompletedEventArgs args)
                 {
-                    if (args.Result != null && args.Result.Contains("LevelSet"))
+                    if (args.Cancelled || args.Error != null)
+                    {
+                        Logger.Send("Failed to create Levelset.", Logger.LogLevel.Warn);
+                        Logger.Send("Wrong response, or request was cancelled.", Logger.LogLevel.Warn);
+                        Logger.Send(args.Error?.InnerException?.Message, Logger.LogLevel.Warn);
+                        return;
+                    }
+
+                    if (args.Result.Contains("LevelSet"))
                     {
                         File.WriteAllText(LevelSetFile, args.Result);
                         TryParseData(args.Result, out CurrentLevelset);
                         Logger.Send($"Created LevelSet For {Player.Instance.ChampionName}");
-                    }
-                    else
-                    {
-                        Logger.Send("LvlupSpells: Wrong Respone or Was Canceled !");
                     }
                 };
             }

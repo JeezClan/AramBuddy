@@ -35,16 +35,16 @@ namespace AramBuddy
                 WebClient.DownloadStringTaskAsync(UpdateMsgPath);
                 WebClient.DownloadStringCompleted += delegate(object sender, DownloadStringCompletedEventArgs args)
                 {
-                    if (args.Cancelled)
+                    if (args.Cancelled || args.Error != null)
                     {
+                        Logger.Send("Failed to get update Message.", Logger.LogLevel.Warn);
                         Logger.Send("Wrong response, or request was cancelled.", Logger.LogLevel.Warn);
                         Logger.Send(args.Error?.InnerException?.Message, Logger.LogLevel.Warn);
-                        Console.WriteLine(args.Result);
+                        return;
                     }
-                    else
-                    {
-                        UpdateMsg = args.Result;
-                    }
+
+                    UpdateMsg = args.Result;
+
                     WebClient.Dispose();
                 };
 
@@ -52,29 +52,33 @@ namespace AramBuddy
                 WebClient2.DownloadStringTaskAsync(WebVersionPath);
                 WebClient2.DownloadStringCompleted += delegate(object sender, DownloadStringCompletedEventArgs args)
                 {
+                    if (args.Cancelled || args.Error != null)
+                    {
+                        Logger.Send("Failed to check live version.", Logger.LogLevel.Warn);
+                        Logger.Send("Wrong response, or request was cancelled.", Logger.LogLevel.Warn);
+                        Logger.Send(args.Error?.InnerException?.Message, Logger.LogLevel.Warn);
+                        return;
+                    }
                     if (args.Cancelled)
                     {
                         Logger.Send("Wrong response, or request was cancelled.", Logger.LogLevel.Warn);
                         Logger.Send(args.Error?.InnerException?.Message, Logger.LogLevel.Warn);
                         Console.WriteLine(args.Result);
                     }
+                    if (!args.Result.Contains(CurrentVersion.ToString()))
+                    {
+                        Drawing.OnEndScene += delegate
+                        {
+                            text.Position = new Vector2(Drawing.Width * 0.01f, Drawing.Height * 0.1f);
+                            text.Draw();
+                        };
+                        Outdated = true;
+                        Logger.Send("Update available for AramBuddy!", Logger.LogLevel.Warn);
+                        Logger.Send("Update Log: " + UpdateMsg);
+                    }
                     else
                     {
-                        if (!args.Result.Contains(CurrentVersion.ToString()))
-                        {
-                            Drawing.OnEndScene += delegate
-                            {
-                                text.Position = new Vector2(Drawing.Width * 0.01f, Drawing.Height * 0.1f);
-                                text.Draw();
-                            };
-                            Outdated = true;
-                            Logger.Send("Update available for AramBuddy!", Logger.LogLevel.Warn);
-                            Logger.Send("Update Log: " + UpdateMsg);
-                        }
-                        else
-                        {
-                            Logger.Send("AramBuddy is updated to the latest version!");
-                        }
+                        Logger.Send("AramBuddy is updated to the latest version!");
                     }
                     WebClient2.Dispose();
                 };

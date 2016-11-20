@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using AramBuddy.MainCore.Utility.MiscUtil;
 using EloBuddy;
 
@@ -69,17 +70,33 @@ namespace AramBuddy.AutoShop
                 WebClient.DownloadStringTaskAsync($"https://raw.githubusercontent.com/plsfixrito/AramBuddy/master/DefaultBuilds/{filename}");
                 WebClient.DownloadStringCompleted += delegate(object sender, DownloadStringCompletedEventArgs args)
                     {
-                        if (args.Result.Contains("data"))
+                        try
                         {
-                            File.WriteAllText(Setup.BuildPath + "\\" + filename, args.Result);
-                            Setup.Builds.Add(BuildName(), File.ReadAllText(Setup.BuildPath + "\\" + filename));
-                            Logger.Send(BuildName() + " Build Created for " + Player.Instance.ChampionName + " - " + BuildName());
-                            Setup.DefaultBuild();
+                            if (args.Cancelled || args.Error != null)
+                            {
+                                Logger.Send(args.Error?.Message, Logger.LogLevel.Error);
+                                Logger.Send("Wrong Response or was canceled, No Champion Build Created !", Logger.LogLevel.Warn);
+                                Logger.Send("No Build is being used !", Logger.LogLevel.Warn);
+                                return;
+                            }
+                            if (args.Result.Contains("data"))
+                            {
+                                File.WriteAllText(Setup.BuildPath + "\\" + filename, args.Result);
+                                Setup.Builds.Add(BuildName(), File.ReadAllText(Setup.BuildPath + "\\" + filename));
+                                Logger.Send(BuildName() + " Build Created for " + Player.Instance.ChampionName + " - " + BuildName());
+                                Setup.UseDefaultBuild();
+                            }
+                            else
+                            {
+                                Logger.Send("Wrong Response, No Champion Build Created", Logger.LogLevel.Warn);
+                                Console.WriteLine(args.Result);
+                            }
                         }
-                        else
+                        catch (TargetInvocationException ex)
                         {
-                            Logger.Send("Wrong Response, No Champion Build Created", Logger.LogLevel.Warn);
-                            Console.WriteLine(args.Result);
+                            Logger.Send("Failed to create default build for " + Player.Instance.ChampionName, ex, Logger.LogLevel.Error);
+                            Logger.Send("No build is currently being used!", Logger.LogLevel.Error);
+                            Logger.Send(ex?.InnerException?.Message, Logger.LogLevel.Error);
                         }
                     };
                 /*
@@ -100,7 +117,7 @@ namespace AramBuddy.AutoShop
                                 File.WriteAllText(Setup.BuildPath + "\\" + filename, request.Result);
                                 Setup.Builds.Add(BuildName(), File.ReadAllText(Setup.BuildPath + "\\" + filename));
                                 Logger.Send(BuildName() + " Build Created for " + Player.Instance.ChampionName + " - " + BuildName());
-                                Setup.DefaultBuild();
+                                Setup.UseDefaultBuild();
                             }
                             else
                             {
@@ -126,11 +143,21 @@ namespace AramBuddy.AutoShop
         {
             try
             {
-                var filename = $"{Player.Instance.CleanChampionName()}.json";
-                var WebClient = new WebClient();
-                WebClient.DownloadStringTaskAsync($"https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/{Config.CurrentPatchUsed}/{Config.CurrentBuildService}/{filename}");
-                WebClient.DownloadStringCompleted += delegate(object sender, DownloadStringCompletedEventArgs args)
+                try
+                {
+                    var filename = $"{Player.Instance.CleanChampionName()}.json";
+                    var WebClient = new WebClient();
+                    WebClient.DownloadStringTaskAsync($"https://raw.githubusercontent.com/plsfixrito/AramBuddyBuilds/master/{Config.CurrentPatchUsed}/{Config.CurrentBuildService}/{filename}");
+                    WebClient.DownloadStringCompleted += delegate (object sender, DownloadStringCompletedEventArgs args)
                     {
+                        if (args.Cancelled || args.Error != null)
+                        {
+                            Logger.Send(args.Error?.Message, Logger.LogLevel.Error);
+                            Logger.Send("Wrong Response or was canceled, No Champion Build Created !", Logger.LogLevel.Warn);
+                            Logger.Send("Trying To Get Defualt Build !", Logger.LogLevel.Warn);
+                            Setup.UseDefaultBuild();
+                            return;
+                        }
                         if (args.Result.Contains("data"))
                         {
                             var filepath = $"{Setup.BuildPath}/{Config.CurrentPatchUsed}/{Config.CurrentBuildService}/{filename}";
@@ -146,6 +173,12 @@ namespace AramBuddy.AutoShop
                             Setup.UseDefaultBuild();
                         }
                     };
+                }
+                catch (TargetInvocationException ex)
+                {
+                    Logger.Send(ex?.InnerException?.Message, Logger.LogLevel.Error);
+                    Setup.UseDefaultBuild();
+                }
                 /*
                 using (var WebClient = new WebClient())
                 {
